@@ -56,6 +56,120 @@ npm run dev
 
 打开 http://localhost:3000
 
+## 生产部署（不使用 Docker）
+
+适合直接部署到 VPS / 云服务器的方案，推荐搭配 PM2 进程守护 + Nginx 反向代理。
+
+**前置条件：** Node.js 20+、MySQL 8.0、PM2（`npm i -g pm2`）
+
+### 1. 拉取代码 & 安装依赖
+
+```bash
+git clone https://github.com/luoianun/ai-command-atlas.git
+cd ai-command-atlas
+npm ci --omit=dev
+```
+
+### 2. 初始化数据库
+
+```bash
+mysql -u root -p < scripts/schema.sql
+mysql -u root -p ai_command_atlas < scripts/seed.sql
+```
+
+### 3. 配置环境变量
+
+```bash
+cp .env.example .env.local
+```
+
+编辑 `.env.local`：
+
+```env
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=atlas
+DB_PASS=your_password
+DB_NAME=ai_command_atlas
+```
+
+> 建议为项目单独创建一个权限最小的 MySQL 用户：
+> ```sql
+> CREATE USER 'atlas'@'localhost' IDENTIFIED BY 'your_password';
+> GRANT SELECT, INSERT, UPDATE, DELETE ON ai_command_atlas.* TO 'atlas'@'localhost';
+> FLUSH PRIVILEGES;
+> ```
+
+### 4. 构建
+
+```bash
+npm run build
+```
+
+### 5. 用 PM2 启动
+
+```bash
+pm2 start npm --name "atlas" -- start
+pm2 save          # 保存进程列表
+pm2 startup       # 生成开机自启命令（按提示执行输出的那条 sudo 命令）
+```
+
+常用 PM2 命令：
+
+```bash
+pm2 status        # 查看状态
+pm2 logs atlas    # 查看日志
+pm2 restart atlas # 重启
+pm2 stop atlas    # 停止
+```
+
+### 6. Nginx 反向代理（可选）
+
+将域名流量转发到 Next.js 的 3000 端口，并终止 HTTPS：
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name your-domain.com;
+
+    ssl_certificate     /etc/ssl/your-domain.com.pem;
+    ssl_certificate_key /etc/ssl/your-domain.com.key;
+
+    location / {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection 'upgrade';
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+```bash
+nginx -t && nginx -s reload
+```
+
+### 更新部署
+
+```bash
+git pull
+npm ci --omit=dev
+npm run build
+pm2 restart atlas
+```
+
+---
+
 ## Docker 部署
 
 ```bash
