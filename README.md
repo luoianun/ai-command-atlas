@@ -28,41 +28,82 @@
 - **前端** — Next.js 16 (App Router) · TypeScript · Tailwind CSS · shadcn/ui
 - **后端** — Next.js API Routes + Server Components
 - **数据库** — MySQL 8.0（所有命令数据均存储在 DB，无硬编码）
-- **部署** — Docker + docker-compose
 
-## 本地开发
+## 快速开始
+
+### 方式一：Docker（推荐）
+
+适合快速体验和本地开发，一条命令启动全部服务，无需单独安装 MySQL。
+
+**前置条件：** Docker Desktop
+
+```bash
+git clone https://github.com/luoianun/ai-command-atlas.git
+cd ai-command-atlas
+docker compose up -d
+```
+
+首次启动会自动完成：镜像构建 → MySQL 初始化（建表 + 灌数据） → 应用启动。
+
+访问 http://localhost:3000
+
+```bash
+docker compose logs -f          # 查看日志
+docker compose down             # 停止
+docker compose down -v          # 停止并清除数据（下次启动重新初始化）
+```
+
+| 服务 | 容器内端口 | 宿主机端口 |
+|------|-----------|-----------|
+| Next.js 应用 | 3000 | 3000 |
+| MySQL 8.0 | 3306 | 3307（避免与本机冲突） |
+
+### 方式二：Node.js 直接运行
+
+适合不使用 Docker、或需要连接已有 MySQL 实例的场景。
 
 **前置条件：** Node.js 20+、MySQL 8.0
 
 ```bash
-# 1. 克隆并进入项目
+# 1. 克隆并安装
 git clone https://github.com/luoianun/ai-command-atlas.git
 cd ai-command-atlas
-
-# 2. 安装依赖
 npm install
 
-# 3. 配置数据库连接
+# 2. 配置数据库连接
 cp .env.example .env.local
-# 编辑 .env.local，填写你的 MySQL 连接信息
+# 编辑 .env.local，填入你的 MySQL 信息
 
-# 4. 初始化数据库
+# 3. 初始化数据库
 mysql -u root -p < scripts/schema.sql
 mysql -u root -p ai_command_atlas < scripts/seed.sql
 
-# 5. 启动开发服务器
+# 4. 启动开发服务器
 npm run dev
 ```
 
-打开 http://localhost:3000
+访问 http://localhost:3000
 
-## 生产部署（不使用 Docker）
+## 生产部署
 
-适合直接部署到 VPS / 云服务器的方案，推荐搭配 PM2 进程守护 + Nginx 反向代理。
+### Docker 部署
+
+与「快速开始 - 方式一」相同，`docker compose up -d` 即可。如需自定义配置，编辑 `docker-compose.yml` 中的环境变量。
+
+更新部署：
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+### 手动部署（PM2 + Nginx）
+
+适合直接部署到 VPS / 云服务器。
 
 **前置条件：** Node.js 20+、MySQL 8.0、PM2（`npm i -g pm2`）
 
-### 1. 拉取代码 & 安装依赖
+#### 1. 安装 & 构建
 
 ```bash
 git clone https://github.com/luoianun/ai-command-atlas.git
@@ -70,14 +111,7 @@ cd ai-command-atlas
 npm ci --omit=dev
 ```
 
-### 2. 初始化数据库
-
-```bash
-mysql -u root -p < scripts/schema.sql
-mysql -u root -p ai_command_atlas < scripts/seed.sql
-```
-
-### 3. 配置环境变量
+#### 2. 配置环境变量
 
 ```bash
 cp .env.example .env.local
@@ -93,28 +127,31 @@ DB_PASS=your_password
 DB_NAME=ai_command_atlas
 ```
 
-> 建议为项目单独创建一个权限最小的 MySQL 用户：
+> 建议创建最小权限的数据库用户：
 > ```sql
 > CREATE USER 'atlas'@'localhost' IDENTIFIED BY 'your_password';
 > GRANT SELECT, INSERT, UPDATE, DELETE ON ai_command_atlas.* TO 'atlas'@'localhost';
 > FLUSH PRIVILEGES;
 > ```
 
-### 4. 构建
+#### 3. 初始化数据库
+
+```bash
+mysql -u root -p < scripts/schema.sql
+mysql -u root -p ai_command_atlas < scripts/seed.sql
+```
+
+#### 4. 构建 & 启动
 
 ```bash
 npm run build
-```
 
-### 5. 用 PM2 启动
-
-```bash
 pm2 start npm --name "atlas" -- start
-pm2 save          # 保存进程列表
-pm2 startup       # 生成开机自启命令（按提示执行输出的那条 sudo 命令）
+pm2 save       # 保存进程列表
+pm2 startup    # 配置开机自启（按提示执行输出的 sudo 命令）
 ```
 
-常用 PM2 命令：
+PM2 常用命令：
 
 ```bash
 pm2 status        # 查看状态
@@ -123,9 +160,7 @@ pm2 restart atlas # 重启
 pm2 stop atlas    # 停止
 ```
 
-### 6. Nginx 反向代理（可选）
-
-将域名流量转发到 Next.js 的 3000 端口，并终止 HTTPS：
+#### 5. Nginx 反向代理（可选）
 
 ```nginx
 server {
@@ -159,7 +194,7 @@ server {
 nginx -t && nginx -s reload
 ```
 
-### 更新部署
+#### 更新部署
 
 ```bash
 git pull
@@ -168,38 +203,15 @@ npm run build
 pm2 restart atlas
 ```
 
----
-
-## Docker 部署
-
-```bash
-# 一键启动（首次会自动构建镜像 + 初始化数据库）
-docker compose up -d
-
-# 查看日志
-docker compose logs -f
-
-# 停止
-docker compose down
-
-# 完全重置（含数据库数据）
-docker compose down -v && docker compose up -d
-```
-
-| 服务 | 地址 |
-|------|------|
-| 网站 | http://localhost:3000 |
-| MySQL | localhost:3307 |
-
 ## 环境变量
 
-```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASS=password
-DB_NAME=ai_command_atlas
-```
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `DB_HOST` | MySQL 地址 | `localhost` |
+| `DB_PORT` | MySQL 端口 | `3306` |
+| `DB_USER` | 数据库用户名 | `root` |
+| `DB_PASS` | 数据库密码 | `password` |
+| `DB_NAME` | 数据库名 | `ai_command_atlas` |
 
 ## 项目结构
 
