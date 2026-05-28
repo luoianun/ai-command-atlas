@@ -121,7 +121,7 @@ export default async function CommandPage({
               <div className="text-[12px] font-semibold text-[var(--muted)] uppercase tracking-[.08em] mb-[10px]">Caveats</div>
               <ul className="flex flex-col gap-2">
                 {cmd.caveats.map((c, i) => (
-                  <li key={i} className="flex gap-[10px] p-[10px_12px] border border-[var(--risk-med-bg)] rounded-[var(--r)] bg-[#fffcf0] text-[13px] leading-[1.6]">
+                  <li key={i} className="flex gap-[10px] p-[10px_12px] border border-[var(--risk-med-bg)] rounded-[var(--r)] bg-[#fffcf0] [data-theme='dark']:bg-[var(--risk-med-bg)] text-[13px] leading-[1.6]">
                     <svg className="flex-shrink-0 mt-[1px] text-[var(--risk-med)]" width="14" height="14" viewBox="0 0 15 15" fill="none">
                       <path d="M8.36 1.5a1 1 0 00-1.72 0l-6 10A1 1 0 001.5 13h12a1 1 0 00.86-1.5l-6-10z" stroke="currentColor" strokeLinejoin="round"/>
                       <path d="M7.5 6v3m0 2v.5" stroke="currentColor" strokeLinecap="round"/>

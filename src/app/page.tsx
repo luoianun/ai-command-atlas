@@ -16,7 +16,7 @@ export default async function HomePage() {
   return (
     <div className="max-w-[1120px] mx-auto px-6">
       {/* Hero */}
-      <div className="py-[52px] pb-9 text-center border-b border-[var(--border-light)]">
+      <div className="pt-[52px] pb-9 text-center border-b border-[var(--border-light)]">
         <div className="inline-flex items-center gap-[5px] font-mono text-[11px] font-medium text-[var(--muted)] tracking-[.06em] uppercase border border-[var(--border)] rounded-full px-[10px] py-[3px] mb-4">
           <span className="w-[5px] h-[5px] rounded-full bg-[var(--accent)] flex-shrink-0" />
           ai-command-atlas
@@ -29,14 +29,14 @@ export default async function HomePage() {
       </div>
 
       {/* Stats */}
-      <div className="flex items-center justify-center py-5 border-b border-[var(--border-light)]">
+      <div className="flex items-center justify-center py-5 border-b border-[var(--border-light)] max-[600px]:flex-wrap max-[600px]:justify-start">
         {[
           { n: stats.cli_count, l: "CLIs" },
           { n: stats.command_count, l: "Commands" },
           { n: stats.slash_count, l: "Slash Commands" },
           { n: stats.official_count, l: "Official Sources" },
         ].map((s, i) => (
-          <div key={i} className={`text-center px-7 ${i > 0 ? "border-l border-[var(--border)]" : ""}`}>
+          <div key={i} className={`text-center px-7 max-[600px]:px-4 max-[600px]:py-3 ${i > 0 ? "border-l border-[var(--border)]" : ""}`}>
             <div className="font-mono text-[22px] font-semibold text-[var(--fg)] leading-[1.2]">{s.n}</div>
             <div className="text-[11px] text-[var(--muted)] mt-[2px]">{s.l}</div>
           </div>
