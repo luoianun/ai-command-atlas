@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 
 export function ThemeToggle() {
   const [dark, setDark] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const t = localStorage.getItem("atlas-theme");
     if (t === "dark") {
       document.documentElement.setAttribute("data-theme", "dark");
@@ -19,6 +21,8 @@ export function ThemeToggle() {
     localStorage.setItem("atlas-theme", next);
     setDark(!dark);
   };
+
+  if (!mounted) return <div className="w-7 h-7" />;
 
   return (
     <button onClick={toggle} aria-label="Toggle theme"

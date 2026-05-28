@@ -26,7 +26,7 @@ export function Nav() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 h-12 px-6 border-b border-[var(--border)] bg-[rgba(255,255,255,0.95)] backdrop-blur-sm flex items-center justify-between">
+    <nav className="nav-bg sticky top-0 z-50 h-12 px-6 border-b border-[var(--border)] backdrop-blur-sm flex items-center justify-between">
       <div className="flex items-center gap-[6px]">
         <Link href="/" className="font-mono text-[13px] font-semibold text-[var(--fg)] no-underline tracking-[-0.02em] px-2 py-1 rounded-[var(--r)]">
           ai-command-<span className="text-[var(--accent)]">atlas</span>

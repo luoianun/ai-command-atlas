@@ -47,6 +47,13 @@
   --risk-high: #f87171;
 }
 
+.nav-bg {
+  background: rgba(255, 255, 255, 0.95);
+}
+[data-theme="dark"] .nav-bg {
+  background: rgba(9, 9, 11, 0.95);
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 body {
   font-family: var(--sans);
