@@ -75,7 +75,9 @@ export interface SearchResult {
 export interface CompareCapability {
   id: number;
   capability: string;
+  capability_zh: string | null;
   capability_desc: string;
+  capability_desc_zh: string | null;
   category: string;
   sort_order: number;
 }
@@ -91,7 +93,9 @@ export interface CompareEntry {
   command_name: string | null;
   command_slug: string | null;
   command_desc: string | null;
+  command_desc_zh: string | null;
   none_label: string | null;
+  none_label_zh: string | null;
   risk_level: RiskLevel | null;
   source: SourceType | null;
   copy_text: string | null;

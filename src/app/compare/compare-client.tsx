@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { Tool, CompareCapability, CompareEntry } from "@/types";
 import { RiskBadge, SourceBadge } from "@/components/badge";
-import { useT } from "@/components/language-provider";
+import { useT, useLang } from "@/components/language-provider";
 
 type CategoryKey = "model" | "session" | "permission" | "mcp" | "config";
 
@@ -51,6 +51,7 @@ export function CompareClient({
   const [activeTab, setActiveTab] = useState<CategoryKey>("model");
   const { capabilities, entries } = allData[activeTab];
   const t = useT();
+  const { lang } = useLang();
 
   const TABS: { key: CategoryKey; label: string }[] = [
     { key: "model", label: t.compare.tabs.model },
@@ -142,10 +143,10 @@ export function CompareClient({
               >
                 <td className="p-[14px] bg-[var(--surface)] border-r border-[var(--border)] align-top">
                   <div className="text-[12px] font-semibold text-[var(--fg)]">
-                    {cap.capability}
+                    {lang === "zh" && cap.capability_zh ? cap.capability_zh : cap.capability}
                   </div>
                   <div className="text-[11px] text-[var(--muted)] mt-[2px] leading-[1.4]">
-                    {cap.capability_desc}
+                    {lang === "zh" && cap.capability_desc_zh ? cap.capability_desc_zh : cap.capability_desc}
                   </div>
                 </td>
 
@@ -168,7 +169,7 @@ export function CompareClient({
                               opacity=".3"
                             />
                           </svg>
-                          {entry?.none_label || t.compare.capability}
+                          {entry?.none_label ? (lang === "zh" && entry.none_label_zh ? entry.none_label_zh : entry.none_label) : t.compare.capability}
                         </div>
                       ) : (
                         <>
@@ -186,7 +187,7 @@ export function CompareClient({
                           )}
                           {entry.command_desc && (
                             <div className="text-[11px] text-[var(--fg)] leading-[1.4] mb-[5px]">
-                              {entry.command_desc}
+                              {lang === "zh" && entry.command_desc_zh ? entry.command_desc_zh : entry.command_desc}
                             </div>
                           )}
                           <div className="flex gap-1 flex-wrap mt-1">
