@@ -2,6 +2,7 @@
 import { useLang, useT } from "@/components/language-provider";
 import type { Tool } from "@/types";
 import { CatBadge } from "@/components/badge";
+import { ToolAvatar } from "@/components/tool-avatar";
 
 export function ToolHeader({ tool }: { tool: Tool }) {
   const { lang } = useLang();
@@ -11,12 +12,7 @@ export function ToolHeader({ tool }: { tool: Tool }) {
   return (
     <div className="flex items-start justify-between gap-4 max-[700px]:flex-col">
       <div className="flex items-start gap-4">
-        <div
-          className="w-12 h-12 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center font-mono text-[13px] font-bold flex-shrink-0"
-          style={{ color: tool.color }}
-        >
-          {tool.avatar}
-        </div>
+        <ToolAvatar slug={tool.slug} avatar={tool.avatar} color={tool.color} size={48} />
         <div>
           <div className="text-[20px] font-bold tracking-[-0.02em] mb-1">{tool.name}</div>
           <div className="text-[13px] text-[var(--muted)] max-w-[520px] mb-[10px]">{desc}</div>
