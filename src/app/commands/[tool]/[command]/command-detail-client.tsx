@@ -11,17 +11,6 @@ export function CommandDetailClient({ cmd, similar }: { cmd: Command; similar: C
 
   return (
     <div className="max-w-[1120px] mx-auto px-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-[6px] py-[14px] text-[12px] text-[var(--muted)]">
-        <Link href="/" className="text-[var(--muted)] no-underline hover:text-[var(--fg)]">{t.nav.home}</Link>
-        <span className="opacity-40">/</span>
-        <Link href="/tools" className="text-[var(--muted)] no-underline hover:text-[var(--fg)]">{t.nav.tools}</Link>
-        <span className="opacity-40">/</span>
-        <Link href={`/tools/${cmd.tool_slug}`} className="text-[var(--muted)] no-underline hover:text-[var(--fg)]">{cmd.tool_name}</Link>
-        <span className="opacity-40">/</span>
-        <span>{cmd.name}</span>
-      </nav>
-
       <div className="grid grid-cols-[1fr_256px] gap-10 items-start pb-16 max-[860px]:grid-cols-1">
         {/* Main content */}
         <div>
