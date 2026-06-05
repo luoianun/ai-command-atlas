@@ -28,11 +28,6 @@ export default function ToolsPage() {
   return (
     <div className="max-w-[1120px] mx-auto px-6">
       <div className="pt-7 pb-5 border-b border-[var(--border)]">
-        <nav className="flex items-center gap-[6px] text-[12px] text-[var(--muted)] mb-[10px]">
-          <Link href="/" className="text-[var(--muted)] no-underline hover:text-[var(--fg)]">{t.nav.home}</Link>
-          <span className="opacity-40">/</span>
-          <span>{t.nav.tools}</span>
-        </nav>
         <h1 className="text-[20px] font-bold tracking-[-0.02em] mb-1">{t.tools.title}</h1>
         <p className="text-[13px] text-[var(--muted)]">{t.tools.subtitle(tools.length)}</p>
       </div>

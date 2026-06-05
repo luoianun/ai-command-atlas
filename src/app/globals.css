@@ -55,6 +55,17 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+html, body {
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none;
+}
+* {
+  scrollbar-width: none;
+}
 body {
   font-family: var(--sans);
   font-size: 14px;
