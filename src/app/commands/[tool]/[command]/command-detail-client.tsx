@@ -11,7 +11,7 @@ export function CommandDetailClient({ cmd, similar }: { cmd: Command; similar: C
 
   return (
     <div className="max-w-[1120px] mx-auto px-6">
-      <div className="grid grid-cols-[1fr_256px] gap-10 items-start pb-16 max-[860px]:grid-cols-1">
+      <div className="grid grid-cols-[1fr_256px] gap-10 items-start pt-7 pb-16 max-[860px]:grid-cols-1">
         {/* Main content */}
         <div>
           <div className="mb-4">
