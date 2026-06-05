@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI CLI Tools — ai-command-atlas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --surface: #fafafa;
+      --fg: #09090b;
+      --muted: #71717a;
+      --border: #e4e4e7;
+      --border-light: #f4f4f5;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --r: 6px;
+      --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono', Menlo, monospace;
+
+      --claude-color: #d97706;
+      --codex-color:  #16a34a;
+      --gemini-color: #2563eb;
+      --aider-color:  #7c3aed;
+      --oc-color:     #0891b2;
+    }
+
+    body {
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      background: var(--bg);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ── */
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      height: 48px; padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-left { display: flex; align-items: center; gap: 6px; }
+    .nav-logo {
+      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      color: var(--fg); text-decoration: none; letter-spacing: -0.02em;
+    }
+    .nav-logo .accent { color: var(--accent); }
+    .nav-sep { width: 1px; height: 20px; background: var(--border); margin: 0 6px; }
+    .nav-link {
+      font-size: 13px; color: var(--muted); text-decoration: none;
+      padding: 4px 10px; border-radius: var(--r);
+      transition: color .12s, background .12s;
+    }
+    .nav-link:hover { color: var(--fg); background: var(--surface); }
+    .nav-link.active { color: var(--fg); font-weight: 500; }
+    .nav-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 500;
+      color: var(--muted); text-decoration: none;
+      padding: 4px 10px; border: 1px solid var(--border);
+      border-radius: var(--r); transition: color .12s, border-color .12s;
+    }
+    .nav-btn:hover { color: var(--fg); border-color: #a1a1aa; }
+
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Page header ── */
+    .page-header {
+      padding: 28px 0 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .breadcrumb {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--muted); margin-bottom: 10px;
+    }
+    .breadcrumb a { color: var(--muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--fg); }
+    .breadcrumb .sep { opacity: .4; }
+    .page-title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+    .page-desc { font-size: 13px; color: var(--muted); }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 18px 0 16px; flex-wrap: wrap;
+    }
+    .search-wrap { position: relative; flex: 1; max-width: 360px; min-width: 200px; }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+    .search-input {
+      width: 100%; height: 36px; padding: 0 12px 0 34px;
+      border: 1px solid var(--border); border-radius: var(--r);
+      font-family: var(--mono); font-size: 12px; color: var(--fg);
+      background: var(--bg); outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .search-input::placeholder { font-family: var(--sans); color: var(--muted); }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.07); }
+
+    .filter-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .filter-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+
+    .chip-group { display: flex; gap: 4px; flex-wrap: wrap; }
+    .f-chip {
+      padding: 4px 10px; border: 1px solid var(--border);
+      border-radius: 999px; font-size: 12px; font-weight: 500;
+      color: var(--muted); background: var(--bg);
+      cursor: pointer; transition: all .12s; user-select: none;
+      white-space: nowrap;
+    }
+    .f-chip:hover { border-color: #a1a1aa; color: var(--fg); }
+    .f-chip.on { background: var(--fg); border-color: var(--fg); color: #fff; }
+
+    .result-info {
+      margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap;
+    }
+
+    /* ── Tool grid ── */
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 12px;
+      padding-bottom: 48px;
+    }
+
+    .tool-card {
+      display: flex; flex-direction: column;
+      border: 1px solid var(--border); border-radius: 8px;
+      text-decoration: none; color: var(--fg);
+      padding: 18px 20px;
+      transition: border-color .15s, box-shadow .15s;
+      cursor: pointer;
+    }
+    .tool-card:hover {
+      border-color: #a1a1aa;
+      box-shadow: 0 2px 10px rgba(0,0,0,.06);
+    }
+    .tool-card:focus-visible {
+      outline: 2px solid var(--accent); outline-offset: 2px;
+    }
+
+    .tc-top { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; }
+    .tc-avatar {
+      width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0;
+      border: 1px solid var(--border); background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .tc-info { flex: 1; min-width: 0; }
+    .tc-name { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 2px; }
+    .tc-company { font-size: 11px; color: var(--muted); }
+
+    .tc-desc {
+      font-size: 12px; color: var(--muted); line-height: 1.55;
+      margin-bottom: 14px; flex: 1;
+    }
+
+    .tc-footer {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      padding-top: 12px; border-top: 1px solid var(--border-light);
+    }
+    .tc-footer .spacer { flex: 1; }
+
+    /* Badges */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 7px; border-radius: 4px;
+      font-size: 11px; font-weight: 500; white-space: nowrap;
+    }
+    .b-cat { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+    .b-count { background: var(--surface); color: var(--fg); border: 1px solid var(--border); font-family: var(--mono); }
+
+    .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+    .dot-claude { background: var(--claude-color); }
+    .dot-codex  { background: var(--codex-color); }
+    .dot-gemini { background: var(--gemini-color); }
+    .dot-aider  { background: var(--aider-color); }
+    .dot-oc     { background: var(--oc-color); }
+
+    .arrow-icon { margin-left: auto; color: var(--muted); opacity: 0; transition: opacity .15s; }
+    .tool-card:hover .arrow-icon { opacity: 1; }
+
+    /* ── Empty ── */
+    .empty {
+      grid-column: 1 / -1;
+      padding: 52px 24px; text-align: center; color: var(--muted);
+      border: 1px solid var(--border); border-radius: var(--r);
+    }
+    .empty strong { color: var(--fg); display: block; font-size: 14px; margin-bottom: 6px; }
+    .empty a { color: var(--accent); }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid var(--border); padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-l { font-size: 12px; color: var(--muted); }
+    .footer-links { display: flex; gap: 16px; }
+    .footer-link { font-size: 12px; color: var(--muted); text-decoration: none; }
+    .footer-link:hover { color: var(--fg); }
+
+    @media (max-width: 700px) {
+      .nav { padding: 0 16px; }
+      .container { padding: 0 16px; }
+      .nav-link { display: none; }
+      .tool-grid { grid-template-columns: 1fr; }
+      .toolbar { gap: 8px; }
+    }
+    [data-theme="dark"] { --bg:#09090b;--surface:#111113;--fg:#fafafa;--muted:#a1a1aa;--border:#27272a;--border-light:#1c1c1f;--accent:#60a5fa;--accent-hover:#93c5fd;--accent-bg:#172554;--risk-low-bg:#052e16;--risk-low:#4ade80;--risk-med-bg:#1c1400;--risk-med:#fbbf24;--risk-high-bg:#2d0a0a;--risk-high:#f87171; }
+    [data-theme="dark"] .nav { background:rgba(9,9,11,0.95); }
+    [data-theme="dark"] .b-official{background:#172554;color:#93c5fd;}[data-theme="dark"] .b-github{background:#2e1065;color:#c4b5fd;}[data-theme="dark"] .b-community{background:#18181b;color:#a1a1aa;}
+    .nav-toggle{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 9px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;font-weight:500;color:var(--muted);background:transparent;cursor:pointer;font-family:var(--sans);transition:color .12s,border-color .12s;}
+    .nav-toggle:hover{color:var(--fg);border-color:#a1a1aa;}
+    .nav-select{height:28px;padding:0 24px 0 9px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;font-weight:500;color:var(--muted);background:var(--bg);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;font-family:var(--sans);transition:color .12s,border-color .12s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2371717a'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;background-size:10px 6px;}
+    .nav-select:hover{color:var(--fg);border-color:#a1a1aa;}
+    #icon-moon{display:none;}
+  </style>
+  <script>(function(){var t=localStorage.getItem('atlas-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();</script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-left">
+    <a href="index.html" class="nav-logo">ai-command-<span class="accent">atlas</span></a>
+    <div class="nav-sep"></div>
+    <a href="index.html" class="nav-link" data-i18n="nav.home">Home</a>
+    <a href="tools.html" class="nav-link active" data-i18n="nav.tools">Tools</a>
+    <a href="compare.html" class="nav-link" data-i18n="nav.compare">Compare</a>
+  </div>
+  <div>
+    <span style="display:inline-flex;align-items:center;gap:8px;">
+      <select class="nav-select" id="lang-select" onchange="applyLang(this.value);localStorage.setItem('atlas-lang',this.value)"><option value="en">English</option><option value="zh">中文</option></select>
+      <button class="nav-toggle" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+        <svg id="icon-sun" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg id="icon-moon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <a href="#" class="nav-btn">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </span>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="page-header">
+    <nav class="breadcrumb">
+      <a href="index.html">Home</a>
+      <span class="sep">/</span>
+      <span>Tools</span>
+    </nav>
+    <h1 class="page-title" data-i18n="page.tools">AI CLI Tools</h1>
+    <p class="page-desc">5 tools indexed · browse commands, options, and slash commands for each CLI</p>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg class="search-icon" width="13" height="13" viewBox="0 0 15 15" fill="none">
+        <path d="M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zm-.657 3.757 2.7 2.7-.707.707-2.7-2.7a4.5 4.5 0 11.707-.707z" fill="currentColor" fill-rule="evenodd"/>
+      </svg>
+      <input type="text" class="search-input" id="searchInput" placeholder="Search tools…">
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label" data-i18n="lbl.provider">Provider</span>
+      <div class="chip-group" id="providerChips">
+        <button class="f-chip on" data-value="">All</button>
+        <button class="f-chip" data-value="Anthropic">Anthropic</button>
+        <button class="f-chip" data-value="OpenAI">OpenAI</button>
+        <button class="f-chip" data-value="Google">Google</button>
+        <button class="f-chip" data-value="Independent">Independent</button>
+      </div>
+    </div>
+
+    <span class="result-info" id="resultInfo">5 tools</span>
+  </div>
+
+  <!-- Tool grid -->
+  <div class="tool-grid" id="toolGrid">
+
+    <a class="tool-card" href="claude-code.html"
+       data-name="claude code" data-provider="Anthropic"
+       data-desc="anthropic ai cli coding agent slash commands tools permissions mcp">
+      <div class="tc-top">
+        <div class="tc-avatar" style="color:var(--claude-color)">CC</div>
+        <div class="tc-info">
+          <div class="tc-name">Claude Code</div>
+          <div class="tc-company">by Anthropic</div>
+        </div>
+      </div>
+      <p class="tc-desc">
+        Anthropic's agentic coding CLI. Deep IDE integration, rich slash commands, MCP tool protocol, granular permission controls, and context-compaction for long sessions.
+      </p>
+      <div class="tc-footer">
+        <span class="dot dot-claude"></span>
+        <span class="badge b-count">89 commands</span>
+        <span class="badge b-cat">v1.x</span>
+        <span class="badge b-cat" style="background:#fef9ec;color:#92400e;border-color:#fde68a">Official</span>
+        <span class="spacer"></span>
+        <svg class="arrow-icon" width="14" height="14" viewBox="0 0 15 15" fill="none">
+          <path d="M3.5 7.5h8m0 0L8 4m3.5 3.5L8 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </a>
+
+    <a class="tool-card" href="codex-cli.html"
+       data-name="codex cli" data-provider="OpenAI"
+       data-desc="openai terminal coding agent approval modes sandbox full-auto">
+      <div class="tc-top">
+        <div class="tc-avatar" style="color:var(--codex-color)">CX</div>
+        <div class="tc-info">
+          <div class="tc-name">Codex CLI</div>
+          <div class="tc-company">by OpenAI</div>
+        </div>
+      </div>
+      <p class="tc-desc">
+        OpenAI's lightweight terminal coding agent. Configurable approval modes (suggest / auto-edit / full-auto), sandboxed execution, and support for multiple model providers.
+      </p>
+      <div class="tc-footer">
+        <span class="dot dot-codex"></span>
+        <span class="badge b-count">62 commands</span>
+        <span class="badge b-cat">v0.1.x</span>
+        <span class="badge b-cat" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0">Official</span>
+        <span class="spacer"></span>
+        <svg class="arrow-icon" width="14" height="14" viewBox="0 0 15 15" fill="none">
+          <path d="M3.5 7.5h8m0 0L8 4m3.5 3.5L8 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </a>
+
+    <a class="tool-card" href="gemini-cli.html"
+       data-name="gemini cli" data-provider="Google"
+       data-desc="google gemini ai coding terminal agent tools">
+      <div class="tc-top">
+        <div class="tc-avatar" style="color:var(--gemini-color)">GC</div>
+        <div class="tc-info">
+          <div class="tc-name">Gemini CLI</div>
+          <div class="tc-company">by Google</div>
+        </div>
+      </div>
+      <p class="tc-desc">
+        Google's open-source AI agent for the terminal, powered by Gemini models. Supports file operations, web search, image understanding, and tool-use extensions.
+      </p>
+      <div class="tc-footer">
+        <span class="dot dot-gemini"></span>
+        <span class="badge b-count">47 commands</span>
+        <span class="badge b-cat">v0.1.x</span>
+        <span class="badge b-cat" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe">Official</span>
+        <span class="spacer"></span>
+        <svg class="arrow-icon" width="14" height="14" viewBox="0 0 15 15" fill="none">
+          <path d="M3.5 7.5h8m0 0L8 4m3.5 3.5L8 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </a>
+
+    <a class="tool-card" href="aider.html"
+       data-name="aider" data-provider="Independent"
+       data-desc="paul gauthier git commit code editing model independent open source">
+      <div class="tc-top">
+        <div class="tc-avatar" style="color:var(--aider-color)">AI</div>
+        <div class="tc-info">
+          <div class="tc-name">Aider</div>
+          <div class="tc-company">by Paul Gauthier · Independent</div>
+        </div>
+      </div>
+      <p class="tc-desc">
+        AI pair programmer in your terminal. Git-native with automatic commit messages, multi-file edits, and broad model support (OpenAI, Anthropic, local models via Ollama).
+      </p>
+      <div class="tc-footer">
+        <span class="dot dot-aider"></span>
+        <span class="badge b-count">74 commands</span>
+        <span class="badge b-cat">v0.71.x</span>
+        <span class="badge b-cat" style="background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe">Official</span>
+        <span class="spacer"></span>
+        <svg class="arrow-icon" width="14" height="14" viewBox="0 0 15 15" fill="none">
+          <path d="M3.5 7.5h8m0 0L8 4m3.5 3.5L8 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </a>
+
+    <a class="tool-card" href="opencode.html"
+       data-name="opencode" data-provider="Independent"
+       data-desc="terminal tui opencode independent sst ai coding agent">
+      <div class="tc-top">
+        <div class="tc-avatar" style="color:var(--oc-color)">OC</div>
+        <div class="tc-info">
+          <div class="tc-name">OpenCode</div>
+          <div class="tc-company">by SST · Independent</div>
+        </div>
+      </div>
+      <p class="tc-desc">
+        Terminal-based AI coding agent from SST with a full TUI interface. Supports multiple providers, persistent sessions, file operations, and shell command execution.
+      </p>
+      <div class="tc-footer">
+        <span class="dot dot-oc"></span>
+        <span class="badge b-count">38 commands</span>
+        <span class="badge b-cat">v0.1.x</span>
+        <span class="badge b-cat" style="background:#ecfeff;color:#0e7490;border-color:#a5f3fc">GitHub</span>
+        <span class="spacer"></span>
+        <svg class="arrow-icon" width="14" height="14" viewBox="0 0 15 15" fill="none">
+          <path d="M3.5 7.5h8m0 0L8 4m3.5 3.5L8 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </a>
+
+    <div class="empty" id="emptyState" style="display:none">
+      <strong>No tools match your filter</strong>
+      Try clearing the search or selecting a different provider.
+      <br><br>
+      Missing a tool? <a href="#">Suggest it on GitHub ↗</a>
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer">
+  <span class="footer-l">ai-command-atlas · community maintained · MIT</span>
+  <div class="footer-links">
+    <a href="#" class="footer-link">GitHub</a>
+    <a href="#" class="footer-link">Contribute</a>
+  </div>
+</footer>
+
+<script>
+  const cards = Array.from(document.querySelectorAll('.tool-card[data-name]'));
+  const searchInput = document.getElementById('searchInput');
+  const providerChips = document.querySelectorAll('#providerChips .f-chip');
+  const resultInfo = document.getElementById('resultInfo');
+  const emptyState = document.getElementById('emptyState');
+
+  let activeProvider = '';
+
+  providerChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      providerChips.forEach(c => c.classList.remove('on'));
+      chip.classList.add('on');
+      activeProvider = chip.dataset.value;
+      applyFilters();
+    });
+  });
+
+  searchInput.addEventListener('input', applyFilters);
+
+  function applyFilters() {
+    const q = searchInput.value.trim().toLowerCase();
+    let visible = 0;
+
+    cards.forEach(card => {
+      const nameMatch = !q || card.dataset.name.includes(q) || card.dataset.desc.includes(q);
+      const providerMatch = !activeProvider || card.dataset.provider === activeProvider;
+      const show = nameMatch && providerMatch;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    emptyState.style.display = visible === 0 ? '' : 'none';
+    resultInfo.textContent = visible + ' tool' + (visible !== 1 ? 's' : '');
+  }
+
+  // keyboard shortcut: focus search on /
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement !== searchInput) {
+      e.preventDefault();
+      searchInput.focus();
+    }
+  });
+</script>
+<script>
+var T={en:{'nav.home':'Home','nav.tools':'Tools','nav.compare':'Compare','page.tools':'AI CLI Tools','lbl.provider':'Provider'},zh:{'nav.home':'首页','nav.tools':'工具','nav.compare':'对比','page.tools':'AI CLI 工具列表','lbl.provider':'提供商'}};
+function toggleTheme(){var d=document.documentElement,isDark=d.getAttribute('data-theme')==='dark',next=isDark?'light':'dark';d.setAttribute('data-theme',next);localStorage.setItem('atlas-theme',next);var s=document.getElementById('icon-sun'),m=document.getElementById('icon-moon');if(s)s.style.display=next==='dark'?'none':'block';if(m)m.style.display=next==='dark'?'block':'none';}
+function applyLang(lang){var sel=document.getElementById('lang-select');if(sel)sel.value=lang;document.querySelectorAll('[data-i18n]').forEach(function(el){var k=el.dataset.i18n;if(T[lang]&&T[lang][k])el.textContent=T[lang][k];});}
+
+(function(){var t=localStorage.getItem('atlas-theme'),s=document.getElementById('icon-sun'),m=document.getElementById('icon-moon');if(t==='dark'){if(s)s.style.display='none';if(m)m.style.display='block';}var lang=localStorage.getItem('atlas-lang')||'en';applyLang(lang);})();
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: atlas-mysql
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --init-connect='SET NAMES utf8mb4'
+    environment:
+      MYSQL_ROOT_PASSWORD: atlas_pass
+      MYSQL_DATABASE: ai_command_atlas
+      MYSQL_USER: atlas
+      MYSQL_PASSWORD: atlas_pass
+    ports:
+      - "3307:3306"          # 3307 避免与本机 MySQL 冲突
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./scripts/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-patlas_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: atlas-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: atlas
+      DB_PASS: atlas_pass
+      DB_NAME: ai_command_atlas
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  mysql_data:

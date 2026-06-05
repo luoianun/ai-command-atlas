@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ai-command-atlas — AI CLI Command Reference</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --surface: #fafafa;
+      --fg: #09090b;
+      --muted: #71717a;
+      --border: #e4e4e7;
+      --border-light: #f4f4f5;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-bg: #eff6ff;
+      --risk-low: #16a34a; --risk-low-bg: #f0fdf4;
+      --risk-med: #d97706; --risk-med-bg: #fffbeb;
+      --risk-high: #dc2626; --risk-high-bg: #fef2f2;
+      --r: 6px;
+      --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono', Menlo, monospace;
+    }
+
+    body {
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      background: var(--bg);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ── */
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      height: 48px; padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-left { display: flex; align-items: center; gap: 6px; }
+    .nav-logo {
+      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      color: var(--fg); text-decoration: none; letter-spacing: -0.02em;
+      padding: 4px 8px; border-radius: var(--r);
+    }
+    .nav-logo .accent { color: var(--accent); }
+    .nav-sep { width: 1px; height: 20px; background: var(--border); margin: 0 6px; }
+    .nav-link {
+      font-size: 13px; color: var(--muted); text-decoration: none;
+      padding: 4px 10px; border-radius: var(--r);
+      transition: color .12s, background .12s;
+    }
+    .nav-link:hover { color: var(--fg); background: var(--surface); }
+    .nav-link.active { color: var(--fg); font-weight: 500; }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .nav-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 500;
+      color: var(--muted); text-decoration: none;
+      padding: 4px 10px; border: 1px solid var(--border);
+      border-radius: var(--r); transition: color .12s, border-color .12s;
+    }
+    .nav-btn:hover { color: var(--fg); border-color: #a1a1aa; }
+
+    /* ── Layout ── */
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Search hero ── */
+    .hero {
+      padding: 52px 0 36px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: var(--mono); font-size: 11px; font-weight: 500;
+      color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase;
+      border: 1px solid var(--border); border-radius: 999px;
+      padding: 3px 10px; margin-bottom: 16px;
+    }
+    .hero-badge .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+    .hero-sub {
+      font-size: 15px; color: var(--muted); margin-bottom: 24px;
+      max-width: 480px; margin-left: auto; margin-right: auto;
+    }
+
+    .search-wrap {
+      position: relative; max-width: 560px; margin: 0 auto 20px;
+    }
+    .search-icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); pointer-events: none;
+    }
+    .search-input {
+      width: 100%; height: 46px;
+      padding: 0 48px 0 40px;
+      border: 1px solid var(--border); border-radius: var(--r);
+      font-family: var(--mono); font-size: 13px;
+      color: var(--fg); background: var(--bg);
+      outline: none; transition: border-color .15s, box-shadow .15s;
+    }
+    .search-input::placeholder { color: var(--muted); font-family: var(--sans); }
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.08);
+    }
+    .search-kbd {
+      position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+      font-family: var(--mono); font-size: 10px; color: var(--muted);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1px 5px;
+    }
+    .search-results {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r); box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      z-index: 100; display: none; text-align: left; overflow: hidden;
+    }
+    .search-results.open { display: block; }
+    .sr-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; cursor: pointer;
+      text-decoration: none; color: var(--fg);
+      transition: background .1s;
+    }
+    .sr-item:hover, .sr-item.focused { background: var(--surface); }
+    .sr-cmd { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--accent); min-width: 160px; }
+    .sr-desc { font-size: 12px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sr-tool-tag {
+      font-size: 10px; font-weight: 500; color: var(--muted);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1px 6px; white-space: nowrap;
+    }
+    .sr-empty { padding: 24px; text-align: center; color: var(--muted); font-size: 13px; }
+    .sr-footer {
+      padding: 7px 14px; border-top: 1px solid var(--border-light);
+      font-size: 11px; color: var(--muted);
+      display: flex; justify-content: space-between;
+    }
+
+    /* ── Tool chips ── */
+    .tool-chips {
+      display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;
+    }
+    .t-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 12px; border: 1px solid var(--border);
+      border-radius: 999px; font-size: 12px; font-weight: 500;
+      color: var(--muted); background: var(--bg);
+      cursor: pointer; transition: all .12s; user-select: none;
+    }
+    .t-chip:hover { border-color: #a1a1aa; color: var(--fg); }
+    .t-chip.on { background: var(--fg); border-color: var(--fg); color: #fff; }
+    .t-chip .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .dot-claude { background: #d97706; }
+    .dot-codex  { background: #16a34a; }
+    .dot-gemini { background: #2563eb; }
+    .dot-aider  { background: #7c3aed; }
+    .dot-oc     { background: #0891b2; }
+
+    /* ── Main section ── */
+    .section { padding: 32px 0; }
+    .section + .section { border-top: 1px solid var(--border-light); }
+    .sec-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .sec-label {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .07em;
+    }
+    .sec-link { font-size: 12px; color: var(--accent); text-decoration: none; }
+    .sec-link:hover { color: var(--accent-hover); text-decoration: underline; }
+
+    /* ── Stats bar ── */
+    .stats {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; padding: 20px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .stat {
+      text-align: center; padding: 0 28px;
+    }
+    .stat + .stat { border-left: 1px solid var(--border); }
+    .stat-n {
+      font-family: var(--mono); font-size: 22px; font-weight: 600;
+      color: var(--fg); line-height: 1.2;
+    }
+    .stat-l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Category chips ── */
+    .cat-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .cat-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border: 1px solid var(--border);
+      border-radius: var(--r); font-size: 12px; font-weight: 500;
+      color: var(--fg); background: var(--bg);
+      text-decoration: none; cursor: pointer;
+      transition: border-color .12s, background .12s;
+    }
+    .cat-chip:hover { background: var(--surface); border-color: #a1a1aa; }
+    .cat-n {
+      font-family: var(--mono); font-size: 10px; color: var(--muted);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; padding: 0 5px; line-height: 17px;
+    }
+
+    /* ── Two-column layout ── */
+    .grid-main { display: grid; grid-template-columns: 1fr 300px; gap: 32px; align-items: start; }
+
+    /* ── Command table ── */
+    .cmd-table {
+      width: 100%; border-collapse: collapse;
+      border: 1px solid var(--border); border-radius: var(--r);
+      overflow: hidden; font-size: 13px;
+    }
+    .cmd-table th {
+      text-align: left; padding: 8px 12px;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .05em;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+    }
+    .cmd-table td { padding: 9px 12px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+    .cmd-table tbody tr:last-child td { border-bottom: none; }
+    .cmd-table tbody tr { cursor: pointer; transition: background .1s; }
+    .cmd-table tbody tr:hover { background: var(--surface); }
+    .c-name { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--accent); }
+    .c-tool { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .c-desc { color: var(--fg); max-width: 320px; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 7px; border-radius: 4px;
+      font-size: 11px; font-weight: 500; white-space: nowrap;
+    }
+    .b-low  { background: var(--risk-low-bg);  color: var(--risk-low);  }
+    .b-med  { background: var(--risk-med-bg);  color: var(--risk-med);  }
+    .b-high { background: var(--risk-high-bg); color: var(--risk-high); }
+    .b-official { background: #eff6ff; color: #2563eb; }
+    .b-github   { background: #f5f3ff; color: #7c3aed; }
+    .b-community{ background: #f4f4f5; color: #52525b; }
+    .b-cat { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+
+    /* ── Tool cards ── */
+    .tool-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px; border: 1px solid var(--border);
+      border-radius: var(--r); text-decoration: none; color: var(--fg);
+      transition: border-color .12s, box-shadow .12s; margin-bottom: 6px;
+    }
+    .tool-card:hover { border-color: #a1a1aa; box-shadow: 0 1px 6px rgba(0,0,0,.05); }
+    .tool-avatar {
+      width: 32px; height: 32px; border-radius: var(--r);
+      border: 1px solid var(--border); background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      color: var(--muted); flex-shrink: 0;
+    }
+    .tool-n { font-size: 13px; font-weight: 600; }
+    .tool-m { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .tool-arrow { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid var(--border); padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 8px;
+    }
+    .footer-l { font-size: 12px; color: var(--muted); }
+    .footer-links { display: flex; gap: 16px; }
+    .footer-link { font-size: 12px; color: var(--muted); text-decoration: none; }
+    .footer-link:hover { color: var(--fg); }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .grid-main { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .nav { padding: 0 16px; }
+      .container { padding: 0 16px; }
+      .hero { padding: 36px 0 28px; }
+      .stats { gap: 0; flex-wrap: wrap; }
+      .stat { padding: 12px 16px; }
+      .nav-link { display: none; }
+    }
+    /* ── Dark mode ── */
+    [data-theme="dark"] {
+      --bg: #09090b; --surface: #111113; --fg: #fafafa;
+      --muted: #a1a1aa; --border: #27272a; --border-light: #1c1c1f;
+      --accent: #60a5fa; --accent-hover: #93c5fd; --accent-bg: #172554;
+      --risk-low-bg: #052e16; --risk-low: #4ade80;
+      --risk-med-bg: #1c1400; --risk-med: #fbbf24;
+      --risk-high-bg: #2d0a0a; --risk-high: #f87171;
+    }
+    [data-theme="dark"] .nav { background: rgba(9,9,11,0.95); }
+    [data-theme="dark"] .search-input { background: var(--surface); }
+    [data-theme="dark"] .search-results { background: var(--surface); box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+    [data-theme="dark"] .b-official { background: #172554; color: #93c5fd; }
+    [data-theme="dark"] .b-github { background: #2e1065; color: #c4b5fd; }
+    [data-theme="dark"] .b-community { background: #18181b; color: #a1a1aa; }
+    [data-theme="dark"] .b-cat { background: #18181b; color: #a1a1aa; border-color: #27272a; }
+    .nav-toggle {
+      display: inline-flex; align-items: center; gap: 4px;
+      height: 28px; padding: 0 9px;
+      border: 1px solid var(--border); border-radius: var(--r);
+      font-size: 12px; font-weight: 500; color: var(--muted);
+      background: transparent; cursor: pointer; font-family: var(--sans);
+      transition: color .12s, border-color .12s;
+    }
+    .nav-toggle:hover { color: var(--fg); border-color: #a1a1aa; }
+    .nav-select{height:28px;padding:0 24px 0 9px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;font-weight:500;color:var(--muted);background:var(--bg);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;font-family:var(--sans);transition:color .12s,border-color .12s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2371717a'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;background-size:10px 6px;}
+    .nav-select:hover{color:var(--fg);border-color:#a1a1aa;}
+    #icon-moon { display: none; }
+  </style>
+  <script>(function(){var t=localStorage.getItem('atlas-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();</script>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav class="nav">
+  <div class="nav-left">
+    <a href="index.html" class="nav-logo">ai-command-<span class="accent">atlas</span></a>
+    <div class="nav-sep"></div>
+    <a href="index.html" class="nav-link active" data-i18n="nav.home">Home</a>
+    <a href="tools.html" class="nav-link" data-i18n="nav.tools">Tools</a>
+    <a href="compare.html" class="nav-link" data-i18n="nav.compare">Compare</a>
+  </div>
+  <div class="nav-right">
+    <select class="nav-select" id="lang-select" onchange="applyLang(this.value);localStorage.setItem('atlas-lang',this.value)"><option value="en">English</option><option value="zh">中文</option></select>
+    <button class="nav-toggle" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+      <svg id="icon-sun" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg id="icon-moon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <a href="#" class="nav-btn">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- ── Hero / Search ── -->
+<div class="container">
+  <div class="hero">
+    <div class="hero-badge"><span class="dot"></span>ai-command-atlas</div>
+    <p class="hero-sub" data-i18n="hero.sub">Search AI CLI commands, slash commands, options, and examples.</p>
+    <div class="search-wrap">
+      <svg class="search-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zm-.657 3.757 2.7 2.7-.707.707-2.7-2.7a4.5 4.5 0 11.707-.707z" fill="currentColor" fill-rule="evenodd"/></svg>
+      <input type="text" class="search-input" id="searchInput" placeholder="Search commands, tools, categories…" data-i18n-ph="search.ph" autocomplete="off" spellcheck="false">
+      <kbd class="search-kbd">⌘K</kbd>
+      <div class="search-results" id="searchResults"></div>
+    </div>
+    <div class="tool-chips" id="toolChips">
+      <button class="t-chip on" data-key="all">All</button>
+      <button class="t-chip" data-key="claude-code"><span class="dot dot-claude"></span>Claude Code</button>
+      <button class="t-chip" data-key="codex-cli"><span class="dot dot-codex"></span>Codex CLI</button>
+      <button class="t-chip" data-key="gemini-cli"><span class="dot dot-gemini"></span>Gemini CLI</button>
+      <button class="t-chip" data-key="aider"><span class="dot dot-aider"></span>Aider</button>
+      <button class="t-chip" data-key="opencode"><span class="dot dot-oc"></span>OpenCode</button>
+    </div>
+  </div>
+
+  <!-- ── Stats ── -->
+  <div class="stats">
+    <div class="stat"><div class="stat-n">5</div><div class="stat-l" data-i18n="stat.clis">CLIs</div></div>
+    <div class="stat"><div class="stat-n">234</div><div class="stat-l" data-i18n="stat.commands">Commands</div></div>
+    <div class="stat"><div class="stat-n">89</div><div class="stat-l" data-i18n="stat.slash">Slash Commands</div></div>
+    <div class="stat"><div class="stat-n">45</div><div class="stat-l" data-i18n="stat.sources">Official Sources</div></div>
+  </div>
+
+  <!-- ── Browse by category ── -->
+  <div class="section">
+    <div class="sec-header">
+      <span class="sec-label" data-i18n="sec.category">Browse by Category</span>
+    </div>
+    <div class="cat-chips">
+      <a href="#" class="cat-chip">Model <span class="cat-n">38</span></a>
+      <a href="#" class="cat-chip">Session <span class="cat-n">24</span></a>
+      <a href="#" class="cat-chip">Permission <span class="cat-n">17</span></a>
+      <a href="#" class="cat-chip">Config <span class="cat-n">29</span></a>
+      <a href="#" class="cat-chip">MCP <span class="cat-n">12</span></a>
+      <a href="#" class="cat-chip">Slash Commands <span class="cat-n">89</span></a>
+    </div>
+  </div>
+
+  <!-- ── Main content + sidebar ── -->
+  <div class="section">
+    <div class="grid-main">
+      <!-- Commands table -->
+      <div>
+        <div class="sec-header">
+          <span class="sec-label" data-i18n="sec.recent">Recently Updated</span>
+          <a href="codex-cli.html" class="sec-link">All commands →</a>
+        </div>
+        <table class="cmd-table">
+          <thead>
+            <tr>
+              <th style="width:180px">Command</th>
+              <th>Description</th>
+              <th style="width:110px">Category</th>
+              <th style="width:72px">Risk</th>
+              <th style="width:90px">Source</th>
+            </tr>
+          </thead>
+          <tbody id="cmdBody">
+            <tr data-tool="codex-cli" onclick="location.href='compact.html'">
+              <td><div class="c-name">/compact</div><div class="c-tool">Codex CLI</div></td>
+              <td class="c-desc">Compact and compress the current conversation context</td>
+              <td><span class="badge b-cat">Session</span></td>
+              <td><span class="badge b-low">Low</span></td>
+              <td><span class="badge b-official">Official</span></td>
+            </tr>
+            <tr data-tool="claude-code" onclick="location.href='#'">
+              <td><div class="c-name">--model</div><div class="c-tool">Claude Code</div></td>
+              <td class="c-desc">Specify the AI model to use for the current session</td>
+              <td><span class="badge b-cat">Model</span></td>
+              <td><span class="badge b-low">Low</span></td>
+              <td><span class="badge b-official">Official</span></td>
+            </tr>
+            <tr data-tool="codex-cli" onclick="location.href='#'">
+              <td><div class="c-name">--approval-mode</div><div class="c-tool">Codex CLI</div></td>
+              <td class="c-desc">Control how the agent requests approval for actions</td>
+              <td><span class="badge b-cat">Permission</span></td>
+              <td><span class="badge b-med">Medium</span></td>
+              <td><span class="badge b-official">Official</span></td>
+            </tr>
+            <tr data-tool="claude-code" onclick="location.href='#'">
+              <td><div class="c-name">--dangerously-skip-permissions</div><div class="c-tool">Claude Code</div></td>
+              <td class="c-desc">Skip all permission prompts — dangerous in production</td>
+              <td><span class="badge b-cat">Permission</span></td>
+              <td><span class="badge b-high">High</span></td>
+              <td><span class="badge b-official">Official</span></td>
+            </tr>
+            <tr data-tool="all" onclick="location.href='#'">
+              <td><div class="c-name">/help</div><div class="c-tool">All CLIs</div></td>
+              <td class="c-desc">Display available commands and usage information</td>
+              <td><span class="badge b-cat">Slash Commands</span></td>
+              <td><span class="badge b-low">Low</span></td>
+              <td><span class="badge b-official">Official</span></td>
+            </tr>
+            <tr data-tool="claude-code" onclick="location.href='#'">
+              <td><div class="c-name">mcp</div><div class="c-tool">Claude Code</div></td>
+              <td class="c-desc">Manage MCP (Model Context Protocol) server connections</td>
+              <td><span class="badge b-cat">MCP</span></td>
+              <td><span class="badge b-med">Medium</span></td>
+              <td><span class="badge b-official">Official</span></td>
+            </tr>
+            <tr data-tool="codex-cli" onclick="location.href='#'">
+              <td><div class="c-name">--sandbox</div><div class="c-tool">Codex CLI</div></td>
+              <td class="c-desc">Run the agent in an isolated sandbox environment</td>
+              <td><span class="badge b-cat">Permission</span></td>
+              <td><span class="badge b-low">Low</span></td>
+              <td><span class="badge b-github">GitHub</span></td>
+            </tr>
+            <tr data-tool="codex-cli" onclick="location.href='codex-cli.html'">
+              <td><div class="c-name">config</div><div class="c-tool">Codex CLI</div></td>
+              <td class="c-desc">View or modify persistent configuration settings</td>
+              <td><span class="badge b-cat">Config</span></td>
+              <td><span class="badge b-low">Low</span></td>
+              <td><span class="badge b-official">Official</span></td>
+            </tr>
+            <tr data-tool="claude-code" onclick="location.href='#'">
+              <td><div class="c-name">resume</div><div class="c-tool">Claude Code</div></td>
+              <td class="c-desc">Resume a previous session by conversation ID</td>
+              <td><span class="badge b-cat">Session</span></td>
+              <td><span class="badge b-low">Low</span></td>
+              <td><span class="badge b-official">Official</span></td>
+            </tr>
+            <tr data-tool="aider" onclick="location.href='#'">
+              <td><div class="c-name">--watch</div><div class="c-tool">Aider</div></td>
+              <td class="c-desc">Watch files for changes and auto-apply suggested edits</td>
+              <td><span class="badge b-cat">Session</span></td>
+              <td><span class="badge b-low">Low</span></td>
+              <td><span class="badge b-official">Official</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Sidebar: Tools -->
+      <div>
+        <div class="sec-header">
+          <span class="sec-label">AI CLI Tools</span>
+          <a href="codex-cli.html" class="sec-link">All tools →</a>
+        </div>
+        <a href="#" class="tool-card">
+          <div class="tool-avatar" style="color:#d97706">CC</div>
+          <div><div class="tool-n">Claude Code</div><div class="tool-m">84 commands · Anthropic</div></div>
+          <span class="tool-arrow">›</span>
+        </a>
+        <a href="codex-cli.html" class="tool-card">
+          <div class="tool-avatar" style="color:#16a34a">CX</div>
+          <div><div class="tool-n">Codex CLI</div><div class="tool-m">62 commands · OpenAI</div></div>
+          <span class="tool-arrow">›</span>
+        </a>
+        <a href="#" class="tool-card">
+          <div class="tool-avatar" style="color:#2563eb">GC</div>
+          <div><div class="tool-n">Gemini CLI</div><div class="tool-m">41 commands · Google</div></div>
+          <span class="tool-arrow">›</span>
+        </a>
+        <a href="#" class="tool-card">
+          <div class="tool-avatar" style="color:#7c3aed">AI</div>
+          <div><div class="tool-n">Aider</div><div class="tool-m">29 commands · Open Source</div></div>
+          <span class="tool-arrow">›</span>
+        </a>
+        <a href="#" class="tool-card">
+          <div class="tool-avatar" style="color:#0891b2">OC</div>
+          <div><div class="tool-n">OpenCode</div><div class="tool-m">18 commands · Open Source</div></div>
+          <span class="tool-arrow">›</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <span class="footer-l">ai-command-atlas · community maintained · MIT</span>
+  <div class="footer-links">
+    <a href="#" class="footer-link">GitHub</a>
+    <a href="#" class="footer-link">Contribute</a>
+    <a href="#" class="footer-link">About</a>
+  </div>
+</footer>
+
+<script>
+  // ── Search data ──
+  const DATA = [
+    { cmd:'/compact',    tool:'Codex CLI',   desc:'Compact and compress the current conversation context', href:'compact.html', key:'codex-cli' },
+    { cmd:'--model',     tool:'Claude Code', desc:'Specify the AI model for the session', href:'#', key:'claude-code' },
+    { cmd:'--approval-mode', tool:'Codex CLI', desc:'Control approval behavior for actions', href:'#', key:'codex-cli' },
+    { cmd:'--dangerously-skip-permissions', tool:'Claude Code', desc:'Skip all permission prompts', href:'#', key:'claude-code' },
+    { cmd:'/help',       tool:'All CLIs',    desc:'Display available commands and usage', href:'#', key:'all' },
+    { cmd:'mcp',         tool:'Claude Code', desc:'Manage MCP server connections', href:'#', key:'claude-code' },
+    { cmd:'--sandbox',   tool:'Codex CLI',   desc:'Run agent in isolated sandbox', href:'#', key:'codex-cli' },
+    { cmd:'config',      tool:'Codex CLI',   desc:'View or modify configuration settings', href:'codex-cli.html', key:'codex-cli' },
+    { cmd:'resume',      tool:'Claude Code', desc:'Resume a previous session by ID', href:'#', key:'claude-code' },
+    { cmd:'--model',     tool:'Gemini CLI',  desc:'Select the Gemini model variant', href:'#', key:'gemini-cli' },
+    { cmd:'--watch',     tool:'Aider',       desc:'Watch files and auto-apply edits', href:'#', key:'aider' },
+    { cmd:'/clear',      tool:'All CLIs',    desc:'Clear conversation history', href:'#', key:'all' },
+    { cmd:'--full-auto', tool:'Codex CLI',   desc:'Enable full autonomous execution mode', href:'#', key:'codex-cli' },
+    { cmd:'/memory',     tool:'Claude Code', desc:'Read or write to persistent memory file', href:'#', key:'claude-code' },
+    { cmd:'--provider',  tool:'Codex CLI',   desc:'Select AI provider backend', href:'#', key:'codex-cli' },
+  ];
+
+  // Search
+  const inp = document.getElementById('searchInput');
+  const res = document.getElementById('searchResults');
+  let focusIdx = -1;
+
+  inp.addEventListener('input', () => {
+    const q = inp.value.trim().toLowerCase();
+    if (!q) { res.classList.remove('open'); return; }
+    const hits = DATA.filter(d =>
+      d.cmd.toLowerCase().includes(q) ||
+      d.desc.toLowerCase().includes(q) ||
+      d.tool.toLowerCase().includes(q)
+    ).slice(0, 7);
+    focusIdx = -1;
+    if (!hits.length) {
+      res.innerHTML = `<div class="sr-empty">No results for "<strong>${q}</strong>" — <a href="#" style="color:var(--accent)">suggest a command ↗</a></div>`;
+    } else {
+      res.innerHTML = hits.map((d,i) =>
+        `<a href="${d.href}" class="sr-item" data-idx="${i}">
+          <span class="sr-cmd">${d.cmd}</span>
+          <span class="sr-desc">${d.desc}</span>
+          <span class="sr-tool-tag">${d.tool}</span>
+        </a>`
+      ).join('') +
+      `<div class="sr-footer"><span>↑↓ navigate</span><span>↵ open · Esc close</span></div>`;
+    }
+    res.classList.add('open');
+  });
+
+  inp.addEventListener('keydown', e => {
+    const items = res.querySelectorAll('.sr-item');
+    if (e.key === 'ArrowDown') { e.preventDefault(); focusIdx = Math.min(focusIdx+1, items.length-1); updateFocus(items); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); focusIdx = Math.max(focusIdx-1, 0); updateFocus(items); }
+    if (e.key === 'Enter' && focusIdx >= 0) { items[focusIdx].click(); }
+    if (e.key === 'Escape') { res.classList.remove('open'); inp.blur(); }
+  });
+
+  function updateFocus(items) {
+    items.forEach((el,i) => el.classList.toggle('focused', i === focusIdx));
+  }
+
+  document.addEventListener('click', e => {
+    if (!inp.contains(e.target) && !res.contains(e.target)) res.classList.remove('open');
+  });
+
+  // ⌘K
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); inp.focus(); inp.select(); }
+  });
+
+  // Tool chips filter
+  const chips = document.querySelectorAll('.t-chip');
+  chips.forEach(ch => {
+    ch.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('on'));
+      ch.classList.add('on');
+      const key = ch.dataset.key;
+      document.querySelectorAll('#cmdBody tr').forEach(row => {
+        const t = row.dataset.tool;
+        row.style.display = (key === 'all' || t === key || t === 'all') ? '' : 'none';
+      });
+    });
+  });
+</script>
+<script>
+var T={en:{'nav.home':'Home','nav.tools':'Tools','nav.compare':'Compare','hero.sub':'Search AI CLI commands, slash commands, options, and examples.','search.ph':'Search commands, tools, categories…','stat.clis':'CLIs','stat.commands':'Commands','stat.slash':'Slash Commands','stat.sources':'Official Sources','sec.category':'Browse by Category','sec.recent':'Recently Updated','tab.all':'All','tab.options':'Command Options','tab.slash':'Slash Commands','tab.config':'Config','tab.examples':'Examples','sec.description':'Description','sec.syntax':'Syntax','sec.examples':'Examples','sec.notes':'Notes','sec.caveats':'Caveats','sec.source':'Source','sec.related':'Related Commands','sec.similar':'Similar in Other CLIs','page.compare':'Compare AI CLI Commands','col.capability':'Capability','page.tools':'AI CLI Tools','lbl.provider':'Provider','filter.all':'All'},zh:{'nav.home':'首页','nav.tools':'工具','nav.compare':'对比','hero.sub':'搜索 AI CLI 命令、Slash 命令、参数与使用示例。','search.ph':'搜索命令、工具、分类…','stat.clis':'工具','stat.commands':'命令','stat.slash':'Slash 命令','stat.sources':'官方来源','sec.category':'按分类浏览','sec.recent':'最近更新','tab.all':'全部','tab.options':'参数选项','tab.slash':'Slash 命令','tab.config':'配置','tab.examples':'示例','sec.description':'功能说明','sec.syntax':'语法','sec.examples':'示例','sec.notes':'注意事项','sec.caveats':'风险说明','sec.source':'来源','sec.related':'相关命令','sec.similar':'其他 CLI 类似命令','page.compare':'AI CLI 命令对比','col.capability':'能力','page.tools':'AI CLI 工具列表','lbl.provider':'提供商','filter.all':'全部'}};
+function toggleTheme(){var d=document.documentElement,isDark=d.getAttribute('data-theme')==='dark',next=isDark?'light':'dark';d.setAttribute('data-theme',next);localStorage.setItem('atlas-theme',next);var s=document.getElementById('icon-sun'),m=document.getElementById('icon-moon');if(s)s.style.display=next==='dark'?'none':'block';if(m)m.style.display=next==='dark'?'block':'none';}
+function applyLang(lang){var sel=document.getElementById('lang-select');if(sel)sel.value=lang;document.querySelectorAll('[data-i18n]').forEach(function(el){var k=el.dataset.i18n;if(T[lang]&&T[lang][k])el.textContent=T[lang][k];});document.querySelectorAll('[data-i18n-ph]').forEach(function(el){var k=el.dataset.i18nPh;if(T[lang]&&T[lang][k])el.placeholder=T[lang][k];});}
+
+(function(){var t=localStorage.getItem('atlas-theme'),s=document.getElementById('icon-sun'),m=document.getElementById('icon-moon');if(t==='dark'){if(s)s.style.display='none';if(m)m.style.display='block';}var lang=localStorage.getItem('atlas-lang')||'en';applyLang(lang);})();
+</script>
+</body>
+</html>

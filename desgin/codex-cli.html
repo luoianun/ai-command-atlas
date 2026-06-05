@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex CLI — ai-command-atlas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --surface: #fafafa;
+      --fg: #09090b;
+      --muted: #71717a;
+      --border: #e4e4e7;
+      --border-light: #f4f4f5;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-bg: #eff6ff;
+      --risk-low: #16a34a; --risk-low-bg: #f0fdf4;
+      --risk-med: #d97706; --risk-med-bg: #fffbeb;
+      --risk-high: #dc2626; --risk-high-bg: #fef2f2;
+      --r: 6px;
+      --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono', Menlo, monospace;
+    }
+
+    body { font-family: var(--sans); font-size: 14px; line-height: 1.5; background: var(--bg); color: var(--fg); -webkit-font-smoothing: antialiased; }
+
+    /* Nav */
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      height: 48px; padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-left { display: flex; align-items: center; gap: 6px; }
+    .nav-logo { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--fg); text-decoration: none; }
+    .nav-logo .accent { color: var(--accent); }
+    .nav-sep { width: 1px; height: 20px; background: var(--border); margin: 0 6px; }
+    .nav-link { font-size: 13px; color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: var(--r); transition: color .12s, background .12s; }
+    .nav-link:hover { color: var(--fg); background: var(--surface); }
+    .nav-link.active { color: var(--fg); font-weight: 500; }
+    .nav-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; color: var(--muted); text-decoration: none; padding: 4px 10px; border: 1px solid var(--border); border-radius: var(--r); transition: color .12s, border-color .12s; }
+    .nav-btn:hover { color: var(--fg); border-color: #a1a1aa; }
+
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      display: flex; align-items: center; gap: 6px;
+      padding: 14px 0; font-size: 12px; color: var(--muted);
+    }
+    .breadcrumb a { color: var(--muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--fg); }
+    .breadcrumb .sep { opacity: .4; }
+
+    /* Tool header */
+    .tool-header {
+      padding: 20px 0 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tool-header-top {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+    }
+    .th-left { display: flex; align-items: flex-start; gap: 16px; }
+    .th-avatar {
+      width: 48px; height: 48px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 13px; font-weight: 700; color: #16a34a;
+      flex-shrink: 0;
+    }
+    .th-name { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+    .th-desc { font-size: 13px; color: var(--muted); max-width: 520px; margin-bottom: 10px; }
+    .th-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .th-links { display: flex; gap: 8px; flex-shrink: 0; }
+    .ext-link {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 500; color: var(--fg);
+      text-decoration: none; padding: 5px 12px;
+      border: 1px solid var(--border); border-radius: var(--r);
+      transition: border-color .12s, background .12s;
+    }
+    .ext-link:hover { background: var(--surface); border-color: #a1a1aa; }
+    .ext-link.primary { background: var(--fg); color: #fff; border-color: var(--fg); }
+    .ext-link.primary:hover { background: #27272a; }
+
+    /* Badges */
+    .badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+    .b-low  { background: var(--risk-low-bg);  color: var(--risk-low); }
+    .b-med  { background: var(--risk-med-bg);  color: var(--risk-med); }
+    .b-high { background: var(--risk-high-bg); color: var(--risk-high); }
+    .b-official { background: #eff6ff; color: #2563eb; }
+    .b-github   { background: #f5f3ff; color: #7c3aed; }
+    .b-community{ background: #f4f4f5; color: #52525b; }
+    .b-cat  { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+    .b-type-option  { background: #eff6ff; color: #1d4ed8; }
+    .b-type-slash   { background: #f0fdf4; color: #15803d; }
+    .b-type-sub     { background: #fdf4ff; color: #7e22ce; }
+    .b-type-flag    { background: #f4f4f5; color: #52525b; }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 0 12px; gap: 12px;
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 8px; }
+    .filter-input {
+      height: 34px; padding: 0 10px 0 32px;
+      border: 1px solid var(--border); border-radius: var(--r);
+      font-family: var(--mono); font-size: 12px;
+      color: var(--fg); background: var(--bg); outline: none;
+      width: 220px; transition: border-color .15s;
+    }
+    .filter-input:focus { border-color: var(--accent); }
+    .filter-input::placeholder { font-family: var(--sans); color: var(--muted); }
+    .filter-wrap { position: relative; }
+    .filter-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+    .filter-select {
+      height: 34px; padding: 0 8px;
+      border: 1px solid var(--border); border-radius: var(--r);
+      font-size: 12px; color: var(--fg); background: var(--bg);
+      outline: none; cursor: pointer;
+    }
+    .result-count { font-size: 12px; color: var(--muted); }
+
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 2px;
+      border-bottom: 1px solid var(--border);
+      padding-top: 16px;
+    }
+    .tab {
+      padding: 7px 14px; font-size: 13px; font-weight: 500;
+      color: var(--muted); cursor: pointer; border: none; background: none;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+      transition: color .12s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tab:hover { color: var(--fg); }
+    .tab.active { color: var(--fg); border-bottom-color: var(--fg); }
+    .tab-count {
+      font-family: var(--mono); font-size: 10px; font-weight: 600;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; padding: 0 5px; color: var(--muted);
+    }
+
+    /* Command table */
+    .cmd-table-wrap { overflow-x: auto; }
+    .cmd-table {
+      width: 100%; border-collapse: collapse;
+      border: 1px solid var(--border); border-radius: var(--r);
+      overflow: hidden; font-size: 13px;
+    }
+    .cmd-table th {
+      text-align: left; padding: 8px 14px;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .05em;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .cmd-table th.sortable { cursor: pointer; user-select: none; }
+    .cmd-table th.sortable:hover { color: var(--fg); }
+    .cmd-table td { padding: 10px 14px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+    .cmd-table tbody tr:last-child td { border-bottom: none; }
+    .cmd-table tbody tr { cursor: pointer; transition: background .1s; }
+    .cmd-table tbody tr:hover { background: #fafafa; }
+    .c-name { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent); }
+    .c-val { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .c-desc { color: var(--fg); }
+
+    /* Empty state */
+    .empty {
+      padding: 48px 24px; text-align: center; color: var(--muted);
+      border: 1px solid var(--border); border-radius: var(--r); margin-top: 4px;
+    }
+    .empty strong { color: var(--fg); display: block; font-size: 14px; margin-bottom: 6px; }
+    .empty a { color: var(--accent); }
+
+    /* Footer */
+    .footer { border-top: 1px solid var(--border); padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; margin-top: 48px; }
+    .footer-l { font-size: 12px; color: var(--muted); }
+    .footer-links { display: flex; gap: 16px; }
+    .footer-link { font-size: 12px; color: var(--muted); text-decoration: none; }
+    .footer-link:hover { color: var(--fg); }
+
+    @media (max-width: 700px) {
+      .nav { padding: 0 16px; }
+      .container { padding: 0 16px; }
+      .tool-header-top { flex-direction: column; }
+      .th-links { flex-direction: row; }
+      .nav-link { display: none; }
+    }
+    [data-theme="dark"] { --bg:#09090b;--surface:#111113;--fg:#fafafa;--muted:#a1a1aa;--border:#27272a;--border-light:#1c1c1f;--accent:#60a5fa;--accent-hover:#93c5fd;--accent-bg:#172554;--risk-low-bg:#052e16;--risk-low:#4ade80;--risk-med-bg:#1c1400;--risk-med:#fbbf24;--risk-high-bg:#2d0a0a;--risk-high:#f87171; }
+    [data-theme="dark"] .nav { background:rgba(9,9,11,0.95); }
+    [data-theme="dark"] .b-official{background:#172554;color:#93c5fd;}[data-theme="dark"] .b-github{background:#2e1065;color:#c4b5fd;}[data-theme="dark"] .b-community{background:#18181b;color:#a1a1aa;}[data-theme="dark"] .b-cat{background:#18181b;color:#a1a1aa;border-color:#27272a;}
+    .nav-toggle{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 9px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;font-weight:500;color:var(--muted);background:transparent;cursor:pointer;font-family:var(--sans);transition:color .12s,border-color .12s;}
+    .nav-toggle:hover{color:var(--fg);border-color:#a1a1aa;}
+    .nav-select{height:28px;padding:0 24px 0 9px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;font-weight:500;color:var(--muted);background:var(--bg);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;font-family:var(--sans);transition:color .12s,border-color .12s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2371717a'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;background-size:10px 6px;}
+    .nav-select:hover{color:var(--fg);border-color:#a1a1aa;}
+    #icon-moon{display:none;}
+  </style>
+  <script>(function(){var t=localStorage.getItem('atlas-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();</script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-left">
+    <a href="index.html" class="nav-logo">ai-command-<span class="accent">atlas</span></a>
+    <div class="nav-sep"></div>
+    <a href="index.html" class="nav-link" data-i18n="nav.home">Home</a>
+    <a href="tools.html" class="nav-link active" data-i18n="nav.tools">Tools</a>
+    <a href="compare.html" class="nav-link" data-i18n="nav.compare">Compare</a>
+  </div>
+  <div>
+    <span style="display:inline-flex;align-items:center;gap:8px;">
+      <select class="nav-select" id="lang-select" onchange="applyLang(this.value);localStorage.setItem('atlas-lang',this.value)"><option value="en">English</option><option value="zh">中文</option></select>
+      <button class="nav-toggle" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+        <svg id="icon-sun" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg id="icon-moon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <a href="#" class="nav-btn">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </span>
+  </div>
+</nav>
+
+<div class="container">
+  <nav class="breadcrumb">
+    <a href="index.html">Home</a>
+    <span class="sep">/</span>
+    <a href="tools.html">Tools</a>
+    <span class="sep">/</span>
+    <span>Codex CLI</span>
+  </nav>
+
+  <!-- Tool header -->
+  <div class="tool-header">
+    <div class="tool-header-top">
+      <div class="th-left">
+        <div class="th-avatar">CX</div>
+        <div>
+          <div class="th-name">Codex CLI</div>
+          <div class="th-desc">OpenAI's lightweight coding agent for the terminal. Runs models locally or via API with configurable approval modes, sandboxing, and full-auto execution.</div>
+          <div class="th-meta">
+            <span class="badge b-cat">by OpenAI</span>
+            <span class="badge b-cat">62 commands</span>
+            <span class="badge" style="background:#f0fdf4;color:#15803d">v0.1.x</span>
+          </div>
+        </div>
+      </div>
+      <div class="th-links">
+        <a href="#" class="ext-link">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
+        </a>
+        <a href="#" class="ext-link primary">
+          Official Docs ↗
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="all"><span data-i18n="tab.all">All</span> <span class="tab-count">62</span></button>
+    <button class="tab" data-tab="options"><span data-i18n="tab.options">Command Options</span> <span class="tab-count">24</span></button>
+    <button class="tab" data-tab="slash"><span data-i18n="tab.slash">Slash Commands</span> <span class="tab-count">18</span></button>
+    <button class="tab" data-tab="config"><span data-i18n="tab.config">Config</span> <span class="tab-count">12</span></button>
+    <button class="tab" data-tab="examples"><span data-i18n="tab.examples">Examples</span> <span class="tab-count">8</span></button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="filter-wrap">
+        <svg class="filter-icon" width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zm-.657 3.757 2.7 2.7-.707.707-2.7-2.7a4.5 4.5 0 11.707-.707z" fill="currentColor" fill-rule="evenodd"/></svg>
+        <input type="text" class="filter-input" id="filterInput" placeholder="Filter commands…">
+      </div>
+      <select class="filter-select" id="catFilter">
+        <option value="">All categories</option>
+        <option>Model</option>
+        <option>Permission</option>
+        <option>Session</option>
+        <option>Config</option>
+        <option>MCP</option>
+        <option>Output</option>
+      </select>
+      <select class="filter-select" id="riskFilter">
+        <option value="">All risks</option>
+        <option>Low</option>
+        <option>Medium</option>
+        <option>High</option>
+      </select>
+    </div>
+    <span class="result-count" id="resultCount">62 commands</span>
+  </div>
+
+  <!-- Table -->
+  <div class="cmd-table-wrap">
+    <table class="cmd-table">
+      <thead>
+        <tr>
+          <th style="width:200px" class="sortable">Command ↕</th>
+          <th style="width:90px">Type</th>
+          <th>Description</th>
+          <th style="width:110px" class="sortable">Category ↕</th>
+          <th style="width:76px" class="sortable">Risk ↕</th>
+          <th style="width:96px">Source</th>
+        </tr>
+      </thead>
+      <tbody id="cmdBody">
+
+        <!-- Slash Commands -->
+        <tr data-tab="slash" data-cat="session" data-risk="low" onclick="location.href='compact.html'">
+          <td><div class="c-name">/compact</div></td>
+          <td><span class="badge b-type-slash">Slash</span></td>
+          <td class="c-desc">Compact and compress the current conversation context to free up context window</td>
+          <td><span class="badge b-cat">Session</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+        <tr data-tab="slash" data-cat="session" data-risk="low" onclick="location.href='#'">
+          <td><div class="c-name">/help</div></td>
+          <td><span class="badge b-type-slash">Slash</span></td>
+          <td class="c-desc">Display all available slash commands and their descriptions</td>
+          <td><span class="badge b-cat">Session</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+        <tr data-tab="slash" data-cat="session" data-risk="low" onclick="location.href='#'">
+          <td><div class="c-name">/clear</div></td>
+          <td><span class="badge b-type-slash">Slash</span></td>
+          <td class="c-desc">Clear the current conversation history and start fresh</td>
+          <td><span class="badge b-cat">Session</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+        <tr data-tab="slash" data-cat="session" data-risk="low" onclick="location.href='#'">
+          <td><div class="c-name">/history</div></td>
+          <td><span class="badge b-type-slash">Slash</span></td>
+          <td class="c-desc">Show a paginated log of the current conversation history</td>
+          <td><span class="badge b-cat">Session</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+
+        <!-- Command options -->
+        <tr data-tab="options" data-cat="model" data-risk="low" onclick="location.href='#'">
+          <td><div class="c-name">--model</div><div class="c-val">-m &lt;model-id&gt;</div></td>
+          <td><span class="badge b-type-option">Option</span></td>
+          <td class="c-desc">Specify the OpenAI model to use (e.g. <code style="font-family:var(--mono);font-size:11px;background:#f4f4f5;padding:1px 4px;border-radius:3px">o4-mini</code>, <code style="font-family:var(--mono);font-size:11px;background:#f4f4f5;padding:1px 4px;border-radius:3px">gpt-4o</code>)</td>
+          <td><span class="badge b-cat">Model</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+        <tr data-tab="options" data-cat="model" data-risk="low" onclick="location.href='#'">
+          <td><div class="c-name">--provider</div><div class="c-val">&lt;provider&gt;</div></td>
+          <td><span class="badge b-type-option">Option</span></td>
+          <td class="c-desc">Select the AI provider backend (openai, azure, ollama)</td>
+          <td><span class="badge b-cat">Model</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+        <tr data-tab="options" data-cat="permission" data-risk="medium" onclick="location.href='#'">
+          <td><div class="c-name">--approval-mode</div><div class="c-val">&lt;suggest|auto-edit|full-auto&gt;</div></td>
+          <td><span class="badge b-type-option">Option</span></td>
+          <td class="c-desc">Control how the agent requests user approval before executing actions</td>
+          <td><span class="badge b-cat">Permission</span></td>
+          <td><span class="badge b-med">Medium</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+        <tr data-tab="options" data-cat="permission" data-risk="low" onclick="location.href='#'">
+          <td><div class="c-name">--sandbox</div><div class="c-val">--sandbox=&lt;policy&gt;</div></td>
+          <td><span class="badge b-type-flag">Flag</span></td>
+          <td class="c-desc">Run the agent inside an isolated sandbox environment</td>
+          <td><span class="badge b-cat">Permission</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-github">GitHub</span></td>
+        </tr>
+        <tr data-tab="options" data-cat="permission" data-risk="high" onclick="location.href='#'">
+          <td><div class="c-name">--full-auto</div></td>
+          <td><span class="badge b-type-flag">Flag</span></td>
+          <td class="c-desc">Enable fully autonomous execution — agent acts without any approval prompts</td>
+          <td><span class="badge b-cat">Permission</span></td>
+          <td><span class="badge b-high">High</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+        <tr data-tab="options" data-cat="permission" data-risk="high" onclick="location.href='#'">
+          <td><div class="c-name">--dangerously-auto-approve-everything</div></td>
+          <td><span class="badge b-type-flag">Flag</span></td>
+          <td class="c-desc">Auto-approve all actions without confirmation — use only in trusted, isolated environments</td>
+          <td><span class="badge b-cat">Permission</span></td>
+          <td><span class="badge b-high">High</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+        <tr data-tab="options" data-cat="config" data-risk="low" onclick="location.href='#'">
+          <td><div class="c-name">--quiet</div><div class="c-val">-q</div></td>
+          <td><span class="badge b-type-flag">Flag</span></td>
+          <td class="c-desc">Suppress verbose output, only show essential messages and results</td>
+          <td><span class="badge b-cat">Output</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+        <tr data-tab="options" data-cat="config" data-risk="low" onclick="location.href='#'">
+          <td><div class="c-name">--json</div></td>
+          <td><span class="badge b-type-flag">Flag</span></td>
+          <td class="c-desc">Output structured JSON instead of human-readable text</td>
+          <td><span class="badge b-cat">Output</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+        <tr data-tab="options" data-cat="config" data-risk="low" onclick="location.href='#'">
+          <td><div class="c-name">--config</div><div class="c-val">&lt;path&gt;</div></td>
+          <td><span class="badge b-type-option">Option</span></td>
+          <td class="c-desc">Specify a custom path to the Codex configuration file</td>
+          <td><span class="badge b-cat">Config</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+        <tr data-tab="options" data-cat="config" data-risk="low" onclick="location.href='#'">
+          <td><div class="c-name">--context-window-size</div><div class="c-val">&lt;tokens&gt;</div></td>
+          <td><span class="badge b-type-option">Option</span></td>
+          <td class="c-desc">Override the default maximum context window token limit</td>
+          <td><span class="badge b-cat">Config</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-github">GitHub</span></td>
+        </tr>
+
+        <!-- Subcommands -->
+        <tr data-tab="config" data-cat="config" data-risk="low" onclick="location.href='#'">
+          <td><div class="c-name">config</div></td>
+          <td><span class="badge b-type-sub">Subcommand</span></td>
+          <td class="c-desc">View or interactively edit persistent Codex configuration values</td>
+          <td><span class="badge b-cat">Config</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+        <tr data-tab="config" data-cat="session" data-risk="low" onclick="location.href='#'">
+          <td><div class="c-name">resume</div><div class="c-val">[session-id]</div></td>
+          <td><span class="badge b-type-sub">Subcommand</span></td>
+          <td class="c-desc">Resume a previous Codex session by session ID or interactively select from history</td>
+          <td><span class="badge b-cat">Session</span></td>
+          <td><span class="badge b-low">Low</span></td>
+          <td><span class="badge b-official">Official</span></td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+  <div class="empty" id="emptyState" style="display:none">
+    <strong>No commands found</strong>
+    Can't find what you're looking for? <a href="#">Suggest a command</a> or <a href="#">contribute on GitHub ↗</a>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <span class="footer-l">ai-command-atlas · community maintained · MIT</span>
+  <div class="footer-links">
+    <a href="#" class="footer-link">GitHub</a>
+    <a href="#" class="footer-link">Contribute</a>
+  </div>
+</footer>
+
+<script>
+  // Tabs
+  const tabs = document.querySelectorAll('.tab');
+  let activeTab = 'all';
+  tabs.forEach(t => {
+    t.addEventListener('click', () => {
+      tabs.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      activeTab = t.dataset.tab;
+      applyFilters();
+    });
+  });
+
+  // Filters
+  const filterInput = document.getElementById('filterInput');
+  const catFilter = document.getElementById('catFilter');
+  const riskFilter = document.getElementById('riskFilter');
+  [filterInput, catFilter, riskFilter].forEach(el => el.addEventListener('input', applyFilters));
+
+  function applyFilters() {
+    const q = filterInput.value.trim().toLowerCase();
+    const cat = catFilter.value.toLowerCase();
+    const risk = riskFilter.value.toLowerCase();
+    const rows = document.querySelectorAll('#cmdBody tr');
+    let visible = 0;
+
+    rows.forEach(row => {
+      const rowTab = row.dataset.tab;
+      const rowCat = row.dataset.cat;
+      const rowRisk = row.dataset.risk;
+      const text = row.textContent.toLowerCase();
+
+      const tabMatch = activeTab === 'all' || rowTab === activeTab;
+      const catMatch = !cat || rowCat === cat;
+      const riskMatch = !risk || rowRisk === risk;
+      const qMatch = !q || text.includes(q);
+
+      const show = tabMatch && catMatch && riskMatch && qMatch;
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    document.getElementById('resultCount').textContent = visible + ' command' + (visible !== 1 ? 's' : '');
+    document.getElementById('emptyState').style.display = visible === 0 ? '' : 'none';
+  }
+</script>
+<script>
+var T={en:{'nav.home':'Home','nav.tools':'Tools','nav.compare':'Compare','tab.all':'All','tab.options':'Command Options','tab.slash':'Slash Commands','tab.config':'Config','tab.examples':'Examples'},zh:{'nav.home':'首页','nav.tools':'工具','nav.compare':'对比','tab.all':'全部','tab.options':'参数选项','tab.slash':'Slash 命令','tab.config':'配置','tab.examples':'示例'}};
+function toggleTheme(){var d=document.documentElement,isDark=d.getAttribute('data-theme')==='dark',next=isDark?'light':'dark';d.setAttribute('data-theme',next);localStorage.setItem('atlas-theme',next);var s=document.getElementById('icon-sun'),m=document.getElementById('icon-moon');if(s)s.style.display=next==='dark'?'none':'block';if(m)m.style.display=next==='dark'?'block':'none';}
+function applyLang(lang){var sel=document.getElementById('lang-select');if(sel)sel.value=lang;document.querySelectorAll('[data-i18n]').forEach(function(el){var k=el.dataset.i18n;if(T[lang]&&T[lang][k])el.textContent=T[lang][k];});}
+
+(function(){var t=localStorage.getItem('atlas-theme'),s=document.getElementById('icon-sun'),m=document.getElementById('icon-moon');if(t==='dark'){if(s)s.style.display='none';if(m)m.style.display='block';}var lang=localStorage.getItem('atlas-lang')||'en';applyLang(lang);})();
+</script>
+</body>
+</html>

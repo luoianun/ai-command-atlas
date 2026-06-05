@@ -1,0 +1,11 @@
+.git
+.claude
+node_modules
+.next
+desgin
+docs
+*.md
+!README.md
+.env.local
+.env*.local
+.gitignore

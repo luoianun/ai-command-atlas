@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>/compact — Codex CLI — ai-command-atlas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --surface: #fafafa;
+      --fg: #09090b;
+      --muted: #71717a;
+      --border: #e4e4e7;
+      --border-light: #f4f4f5;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-bg: #eff6ff;
+      --risk-low: #16a34a; --risk-low-bg: #f0fdf4;
+      --risk-med: #d97706; --risk-med-bg: #fffbeb;
+      --risk-high: #dc2626; --risk-high-bg: #fef2f2;
+      --r: 6px;
+      --code-bg: #18181b;
+      --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono', Menlo, monospace;
+    }
+
+    body { font-family: var(--sans); font-size: 14px; line-height: 1.6; background: var(--bg); color: var(--fg); -webkit-font-smoothing: antialiased; }
+
+    /* Nav */
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      height: 48px; padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-left { display: flex; align-items: center; gap: 6px; }
+    .nav-logo { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--fg); text-decoration: none; }
+    .nav-logo .accent { color: var(--accent); }
+    .nav-sep { width: 1px; height: 20px; background: var(--border); margin: 0 6px; }
+    .nav-link { font-size: 13px; color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: var(--r); transition: color .12s, background .12s; }
+    .nav-link:hover { color: var(--fg); background: var(--surface); }
+    .nav-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); text-decoration: none; padding: 4px 10px; border: 1px solid var(--border); border-radius: var(--r); transition: all .12s; }
+    .nav-btn:hover { color: var(--fg); border-color: #a1a1aa; }
+
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+    /* Breadcrumb */
+    .breadcrumb { display: flex; align-items: center; gap: 6px; padding: 14px 0; font-size: 12px; color: var(--muted); }
+    .breadcrumb a { color: var(--muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--fg); }
+    .breadcrumb .sep { opacity: .4; }
+
+    /* Layout */
+    .page-grid { display: grid; grid-template-columns: 1fr 256px; gap: 40px; align-items: start; padding-bottom: 64px; }
+
+    /* ── Main content ── */
+    .cmd-title-row {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 16px; margin-bottom: 16px;
+    }
+    .cmd-title {
+      font-family: var(--mono); font-size: 28px; font-weight: 700;
+      letter-spacing: -0.03em; color: var(--fg);
+    }
+    .cmd-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+    .b-low  { background: var(--risk-low-bg);  color: var(--risk-low); }
+    .b-med  { background: var(--risk-med-bg);  color: var(--risk-med); }
+    .b-high { background: var(--risk-high-bg); color: var(--risk-high); }
+    .b-official { background: #eff6ff; color: #2563eb; }
+    .b-github   { background: #f5f3ff; color: #7c3aed; }
+    .b-cat  { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+
+    /* Sections */
+    .doc-section { margin-bottom: 32px; }
+    .doc-section + .doc-section { border-top: 1px solid var(--border-light); padding-top: 28px; }
+    .sec-title {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .08em;
+      margin-bottom: 10px;
+    }
+    .doc-p { font-size: 14px; color: var(--fg); line-height: 1.7; }
+    .doc-p + .doc-p { margin-top: 10px; }
+
+    /* Code block */
+    .code-block {
+      position: relative; background: var(--code-bg);
+      border-radius: var(--r); overflow: hidden; margin-top: 8px;
+    }
+    .code-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px 6px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .code-lang { font-family: var(--mono); font-size: 10px; font-weight: 600; color: #71717a; letter-spacing: .06em; text-transform: uppercase; }
+    .copy-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-family: var(--mono); font-size: 10px; font-weight: 500;
+      color: #a1a1aa; background: none; border: 1px solid rgba(255,255,255,.1);
+      border-radius: 4px; padding: 3px 8px; cursor: pointer;
+      transition: color .12s, border-color .12s;
+    }
+    .copy-btn:hover { color: #e4e4e7; border-color: rgba(255,255,255,.2); }
+    .copy-btn.copied { color: #4ade80; border-color: rgba(74,222,128,.3); }
+    pre {
+      padding: 14px 16px; overflow-x: auto;
+      font-family: var(--mono); font-size: 12.5px; line-height: 1.65;
+      color: #e4e4e7;
+    }
+    pre .prompt { color: #4ade80; user-select: none; }
+    pre .cmd { color: #93c5fd; }
+    pre .arg { color: #fbbf24; }
+    pre .comment { color: #6b7280; }
+    pre .output { color: #a3a3a3; }
+
+    /* Notes / caveats */
+    .note-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .note-item {
+      display: flex; gap: 10px; padding: 10px 12px;
+      border: 1px solid var(--border-light); border-radius: var(--r);
+      font-size: 13px; line-height: 1.6;
+    }
+    .note-item .ni-icon { flex-shrink: 0; margin-top: 1px; }
+    .caveat-item {
+      border-color: var(--risk-med-bg);
+      background: #fffcf0;
+    }
+    .caveat-item .ni-icon { color: var(--risk-med); }
+    .note-item .ni-icon { color: var(--accent); }
+
+    /* Related table */
+    .related-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .related-table tr { cursor: pointer; transition: background .1s; }
+    .related-table tr:hover { background: var(--surface); }
+    .related-table td { padding: 8px 0; border-bottom: 1px solid var(--border-light); }
+    .related-table tr:last-child td { border-bottom: none; }
+    .rc-name { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--accent); }
+    .rc-desc { color: var(--muted); font-size: 12px; margin-top: 1px; }
+
+    /* ── Sidebar ── */
+    .sidebar { position: sticky; top: 68px; }
+    .meta-card {
+      border: 1px solid var(--border); border-radius: var(--r);
+      overflow: hidden; margin-bottom: 12px;
+    }
+    .meta-card-title {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .07em;
+      padding: 10px 14px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .meta-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--border-light);
+      font-size: 12px;
+    }
+    .meta-row:last-child { border-bottom: none; }
+    .meta-key { color: var(--muted); }
+    .meta-val { font-weight: 500; text-align: right; }
+    .meta-val.mono { font-family: var(--mono); font-size: 11px; color: var(--fg); }
+    .meta-val a { color: var(--accent); text-decoration: none; }
+    .meta-val a:hover { text-decoration: underline; }
+
+    .sidebar-sec-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin: 16px 0 8px; }
+
+    /* Similar CLIs */
+    .similar-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .similar-table tr { cursor: pointer; transition: background .1s; }
+    .similar-table tr:hover { background: var(--surface); border-radius: var(--r); }
+    .similar-table td { padding: 8px 0; border-bottom: 1px solid var(--border-light); }
+    .similar-table tr:last-child td { border-bottom: none; }
+    .sim-cmd { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--accent); }
+    .sim-tool { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .sim-right { text-align: right; }
+
+    /* Footer */
+    .footer { border-top: 1px solid var(--border); padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .footer-l { font-size: 12px; color: var(--muted); }
+    .footer-links { display: flex; gap: 16px; }
+    .footer-link { font-size: 12px; color: var(--muted); text-decoration: none; }
+    .footer-link:hover { color: var(--fg); }
+
+    @media (max-width: 860px) {
+      .page-grid { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+    }
+    @media (max-width: 600px) {
+      .nav { padding: 0 16px; }
+      .container { padding: 0 16px; }
+      .nav-link { display: none; }
+      .cmd-title { font-size: 22px; }
+    }
+    [data-theme="dark"] { --bg:#09090b;--surface:#111113;--fg:#fafafa;--muted:#a1a1aa;--border:#27272a;--border-light:#1c1c1f;--accent:#60a5fa;--accent-hover:#93c5fd;--accent-bg:#172554;--risk-low-bg:#052e16;--risk-low:#4ade80;--risk-med-bg:#1c1400;--risk-med:#fbbf24;--risk-high-bg:#2d0a0a;--risk-high:#f87171; }
+    [data-theme="dark"] .nav { background:rgba(9,9,11,0.95); }
+    [data-theme="dark"] .b-official{background:#172554;color:#93c5fd;}[data-theme="dark"] .b-github{background:#2e1065;color:#c4b5fd;}[data-theme="dark"] .b-community{background:#18181b;color:#a1a1aa;}[data-theme="dark"] .b-cat{background:#18181b;color:#a1a1aa;border-color:#27272a;}
+    .nav-toggle{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 9px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;font-weight:500;color:var(--muted);background:transparent;cursor:pointer;font-family:var(--sans);transition:color .12s,border-color .12s;}
+    .nav-toggle:hover{color:var(--fg);border-color:#a1a1aa;}
+    .nav-select{height:28px;padding:0 24px 0 9px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;font-weight:500;color:var(--muted);background:var(--bg);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;font-family:var(--sans);transition:color .12s,border-color .12s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2371717a'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;background-size:10px 6px;}
+    .nav-select:hover{color:var(--fg);border-color:#a1a1aa;}
+    #icon-moon{display:none;}
+  </style>
+  <script>(function(){var t=localStorage.getItem('atlas-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();</script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-left">
+    <a href="index.html" class="nav-logo">ai-command-<span class="accent">atlas</span></a>
+    <div class="nav-sep"></div>
+    <a href="index.html" class="nav-link" data-i18n="nav.home">Home</a>
+    <a href="tools.html" class="nav-link" data-i18n="nav.tools">Tools</a>
+    <a href="compare.html" class="nav-link" data-i18n="nav.compare">Compare</a>
+  </div>
+  <span style="display:inline-flex;align-items:center;gap:8px;">
+    <select class="nav-select" id="lang-select" onchange="applyLang(this.value);localStorage.setItem('atlas-lang',this.value)"><option value="en">English</option><option value="zh">中文</option></select>
+    <button class="nav-toggle" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+      <svg id="icon-sun" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg id="icon-moon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <a href="#" class="nav-btn">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
+  </span>
+</nav>
+
+<div class="container">
+  <nav class="breadcrumb">
+    <a href="index.html">Home</a>
+    <span class="sep">/</span>
+    <a href="tools.html">Tools</a>
+    <span class="sep">/</span>
+    <a href="codex-cli.html">Codex CLI</a>
+    <span class="sep">/</span>
+    <span>/compact</span>
+  </nav>
+
+  <div class="page-grid">
+    <!-- ── Main ── -->
+    <div>
+      <div class="cmd-title-row">
+        <div>
+          <div class="cmd-badges">
+            <span class="badge b-cat">Slash Command</span>
+            <span class="badge b-cat">Session</span>
+            <span class="badge b-low">Low Risk</span>
+            <span class="badge b-official">Official</span>
+          </div>
+          <h1 class="cmd-title">/compact</h1>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="doc-section">
+        <div class="sec-title" data-i18n="sec.description">Description</div>
+        <p class="doc-p">
+          <code style="font-family:var(--mono);font-size:13px;background:#f4f4f5;padding:1px 5px;border-radius:3px">/compact</code> instructs Codex CLI to compress the current conversation history into a shorter summary, freeing up context window tokens for longer coding sessions.
+        </p>
+        <p class="doc-p">
+          When a session accumulates many turns of dialogue, model responses and tool call outputs consume a large portion of the context window. Running <code style="font-family:var(--mono);font-size:12px;background:#f4f4f5;padding:1px 4px;border-radius:3px">/compact</code> replaces verbose history with a condensed summary while retaining key decisions, file paths, and in-progress task context.
+        </p>
+      </div>
+
+      <!-- Syntax -->
+      <div class="doc-section">
+        <div class="sec-title" data-i18n="sec.syntax">Syntax</div>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">shell</span>
+            <button class="copy-btn" data-code="syntax"
+              onclick="copyCode(this, '/compact\n/compact [instructions]')">
+              <svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M5 2H4a1 1 0 00-1 1v9a1 1 0 001 1h7a1 1 0 001-1V9M5 2h6a1 1 0 011 1v1M5 2a1 1 0 011-1h2a1 1 0 011 1v1H6V2zm-1 3h8" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Copy
+            </button>
+          </div>
+          <pre><span class="comment"># Basic usage — compact with default summary</span>
+<span class="prompt">&gt; </span><span class="cmd">/compact</span>
+
+<span class="comment"># With custom instructions for what to preserve</span>
+<span class="prompt">&gt; </span><span class="cmd">/compact</span> <span class="arg">Focus on the authentication refactor. Keep all file paths.</span></pre>
+        </div>
+      </div>
+
+      <!-- Parameters -->
+      <div class="doc-section">
+        <div class="sec-title">Parameters</div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:var(--surface);border-bottom:1px solid var(--border)">Parameter</th>
+              <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:var(--surface);border-bottom:1px solid var(--border)">Type</th>
+              <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:var(--surface);border-bottom:1px solid var(--border)">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:9px 12px;border-bottom:1px solid var(--border-light)"><code style="font-family:var(--mono);font-size:11px;color:var(--accent)">[instructions]</code></td>
+              <td style="padding:9px 12px;border-bottom:1px solid var(--border-light);color:var(--muted)">string, optional</td>
+              <td style="padding:9px 12px;border-bottom:1px solid var(--border-light)">Natural language hints passed to the model about what context to preserve in the summary.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Examples -->
+      <div class="doc-section">
+        <div class="sec-title" data-i18n="sec.examples">Examples</div>
+
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px">After a long debugging session — reset context before new feature work:</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">shell session</span>
+            <button class="copy-btn" onclick="copyCode(this, '/compact Keep the bug in auth.ts we just fixed and the test structure. Forget the failed attempts.')">
+              <svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M5 2H4a1 1 0 00-1 1v9a1 1 0 001 1h7a1 1 0 001-1V9M5 2h6a1 1 0 011-1v1M5 2a1 1 0 011-1h2a1 1 0 011 1v1H6V2zm-1 3h8" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Copy
+            </button>
+          </div>
+          <pre><span class="prompt">&gt; </span><span class="cmd">/compact</span> <span class="arg">Keep the bug in auth.ts we just fixed and the test structure. Forget the failed attempts.</span>
+<span class="output">
+✓ Conversation compacted (84 → 12 turns)
+  Preserved: auth.ts fix, test file structure, current task context
+  Freed: ~18 400 tokens
+</span></pre>
+        </div>
+
+        <p style="font-size:12px;color:var(--muted);margin:16px 0 8px">Compact before switching to a new subtask in the same session:</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">shell session</span>
+            <button class="copy-btn" onclick="copyCode(this, '/compact Summarise the database migration work. I am now working on the API layer.')">
+              <svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M5 2H4a1 1 0 00-1 1v9a1 1 0 001 1h7a1 1 0 001-1V9M5 2h6a1 1 0 011-1v1M5 2a1 1 0 011-1h2a1 1 0 011 1v1H6V2zm-1 3h8" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Copy
+            </button>
+          </div>
+          <pre><span class="prompt">&gt; </span><span class="cmd">/compact</span> <span class="arg">Summarise the database migration work. I am now working on the API layer.</span>
+<span class="output">
+✓ Conversation compacted (61 → 9 turns)
+  Freed: ~14 200 tokens
+</span></pre>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="doc-section">
+        <div class="sec-title" data-i18n="sec.notes">Notes</div>
+        <ul class="note-list">
+          <li class="note-item">
+            <span class="ni-icon">
+              <svg width="14" height="14" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor"/><path d="M7.5 4v4m0 2.5v.5" stroke="currentColor" stroke-linecap="round"/></svg>
+            </span>
+            <span>Compaction uses the model itself to write the summary — quality depends on how well you phrase the optional instructions. Be specific about tasks in progress.</span>
+          </li>
+          <li class="note-item">
+            <span class="ni-icon">
+              <svg width="14" height="14" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor"/><path d="M7.5 4v4m0 2.5v.5" stroke="currentColor" stroke-linecap="round"/></svg>
+            </span>
+            <span>The original conversation history is discarded after compaction — there is no undo. If you need the full context, use <code style="font-family:var(--mono);font-size:11px;background:#f4f4f5;padding:1px 4px;border-radius:3px">resume</code> to start a new session instead.</span>
+          </li>
+          <li class="note-item">
+            <span class="ni-icon">
+              <svg width="14" height="14" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor"/><path d="M7.5 4v4m0 2.5v.5" stroke="currentColor" stroke-linecap="round"/></svg>
+            </span>
+            <span>Works best after a clearly defined phase has completed (e.g. after a bug fix, before switching features).</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Caveats -->
+      <div class="doc-section">
+        <div class="sec-title" data-i18n="sec.caveats">Caveats</div>
+        <ul class="note-list">
+          <li class="note-item caveat-item">
+            <span class="ni-icon">
+              <svg width="14" height="14" viewBox="0 0 15 15" fill="none"><path d="M8.36 1.5a1 1 0 00-1.72 0l-6 10A1 1 0 001.5 13h12a1 1 0 00.86-1.5l-6-10z" stroke="currentColor" stroke-linejoin="round"/><path d="M7.5 6v3m0 2v.5" stroke="currentColor" stroke-linecap="round"/></svg>
+            </span>
+            <span>The summary is non-deterministic — two identical invocations may produce slightly different summaries depending on the model's sampling.</span>
+          </li>
+          <li class="note-item caveat-item">
+            <span class="ni-icon">
+              <svg width="14" height="14" viewBox="0 0 15 15" fill="none"><path d="M8.36 1.5a1 1 0 00-1.72 0l-6 10A1 1 0 001.5 13h12a1 1 0 00.86-1.5l-6-10z" stroke="currentColor" stroke-linejoin="round"/><path d="M7.5 6v3m0 2v.5" stroke="currentColor" stroke-linecap="round"/></svg>
+            </span>
+            <span>Tool call outputs (large file reads, long command output) may be summarised aggressively. If a specific shell output is critical, quote it explicitly in your instructions.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Related commands -->
+      <div class="doc-section">
+        <div class="sec-title">Related Commands — Codex CLI</div>
+        <table class="related-table">
+          <tr onclick="location.href='#'">
+            <td><div class="rc-name">/clear</div><div class="rc-desc">Wipe conversation history entirely, no summary</div></td>
+            <td style="text-align:right"><span class="badge b-low">Low</span></td>
+          </tr>
+          <tr onclick="location.href='#'">
+            <td><div class="rc-name">/history</div><div class="rc-desc">View the current session's conversation log</div></td>
+            <td style="text-align:right"><span class="badge b-low">Low</span></td>
+          </tr>
+          <tr onclick="location.href='#'">
+            <td><div class="rc-name">resume</div><div class="rc-desc">Start a new session resuming a prior conversation</div></td>
+            <td style="text-align:right"><span class="badge b-low">Low</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Sidebar ── -->
+    <div class="sidebar">
+      <div class="meta-card">
+        <div class="meta-card-title">Command Info</div>
+        <div class="meta-row">
+          <span class="meta-key">Tool</span>
+          <span class="meta-val"><a href="codex-cli.html">Codex CLI</a></span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">Type</span>
+          <span class="meta-val">Slash Command</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">Category</span>
+          <span class="meta-val">Session</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">Risk</span>
+          <span class="meta-val"><span class="badge b-low">Low</span></span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">Source</span>
+          <span class="meta-val"><span class="badge b-official">Official</span></span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">Last checked</span>
+          <span class="meta-val mono">2026-05-28</span>
+        </div>
+      </div>
+
+      <div class="meta-card">
+        <div class="meta-card-title">Official Source</div>
+        <div style="padding:12px 14px">
+          <a href="#" style="font-size:12px;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:5px">
+            <svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M8 2.5a.5.5 0 000-1V2.5zm5 5a.5.5 0 000-1V7.5zm-5-5H3a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V7.5h-1V11H3V3.5h5v-1zm0 0h4.5M8 2.5l4.5 4.5M12.5 2.5V7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            openai.github.io/codex/docs
+          </a>
+          <p style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">Verified against official Codex CLI documentation. Confirmed present in v0.1.x.</p>
+        </div>
+      </div>
+
+      <div class="sidebar-sec-title">Similar in Other CLIs</div>
+      <div class="meta-card">
+        <div class="meta-card-title">Equivalent Commands</div>
+        <table class="similar-table">
+          <tr style="cursor:pointer" onclick="location.href='#'">
+            <td style="padding:9px 14px;border-bottom:1px solid var(--border-light)">
+              <div class="sim-cmd">/compact</div>
+              <div class="sim-tool">Claude Code</div>
+            </td>
+            <td class="sim-right" style="padding:9px 14px;border-bottom:1px solid var(--border-light)">
+              <span class="badge b-low">Low</span>
+            </td>
+          </tr>
+          <tr style="cursor:pointer" onclick="location.href='#'">
+            <td style="padding:9px 14px;border-bottom:1px solid var(--border-light)">
+              <div class="sim-cmd">/compress</div>
+              <div class="sim-tool">Gemini CLI</div>
+            </td>
+            <td class="sim-right" style="padding:9px 14px;border-bottom:1px solid var(--border-light)">
+              <span class="badge b-low">Low</span>
+            </td>
+          </tr>
+          <tr style="cursor:pointer" onclick="location.href='#'">
+            <td style="padding:9px 14px">
+              <div class="sim-cmd">/tokens</div>
+              <div class="sim-tool">Aider</div>
+            </td>
+            <td class="sim-right" style="padding:9px 14px">
+              <span class="badge b-cat">Info only</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin-top:12px;padding:12px;border:1px dashed var(--border);border-radius:var(--r);font-size:12px;color:var(--muted);text-align:center">
+        See a mistake?
+        <a href="#" style="color:var(--accent);text-decoration:none">Edit on GitHub ↗</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <span class="footer-l">ai-command-atlas · community maintained · MIT</span>
+  <div class="footer-links">
+    <a href="#" class="footer-link">GitHub</a>
+    <a href="#" class="footer-link">Contribute</a>
+  </div>
+</footer>
+
+<script>
+  function copyCode(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.classList.add('copied');
+      btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M2 7.5L5.5 11 13 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Copied';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M5 2H4a1 1 0 00-1 1v9a1 1 0 001 1h7a1 1 0 001-1V9M5 2h6a1 1 0 011-1v1M5 2a1 1 0 011-1h2a1 1 0 011 1v1H6V2zm-1 3h8" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg> Copy';
+      }, 2000);
+    });
+  }
+</script>
+<script>
+var T={en:{'nav.home':'Home','nav.tools':'Tools','nav.compare':'Compare','sec.description':'Description','sec.syntax':'Syntax','sec.examples':'Examples','sec.notes':'Notes','sec.caveats':'Caveats'},zh:{'nav.home':'首页','nav.tools':'工具','nav.compare':'对比','sec.description':'功能说明','sec.syntax':'语法','sec.examples':'示例','sec.notes':'注意事项','sec.caveats':'风险说明'}};
+function toggleTheme(){var d=document.documentElement,isDark=d.getAttribute('data-theme')==='dark',next=isDark?'light':'dark';d.setAttribute('data-theme',next);localStorage.setItem('atlas-theme',next);var s=document.getElementById('icon-sun'),m=document.getElementById('icon-moon');if(s)s.style.display=next==='dark'?'none':'block';if(m)m.style.display=next==='dark'?'block':'none';}
+function applyLang(lang){var sel=document.getElementById('lang-select');if(sel)sel.value=lang;document.querySelectorAll('[data-i18n]').forEach(function(el){var k=el.dataset.i18n;if(T[lang]&&T[lang][k])el.textContent=T[lang][k];});}
+
+(function(){var t=localStorage.getItem('atlas-theme'),s=document.getElementById('icon-sun'),m=document.getElementById('icon-moon');if(t==='dark'){if(s)s.style.display='none';if(m)m.style.display='block';}var lang=localStorage.getItem('atlas-lang')||'en';applyLang(lang);})();
+</script>
+</body>
+</html>
