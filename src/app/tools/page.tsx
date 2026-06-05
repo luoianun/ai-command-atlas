@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { Tool } from "@/types";
 import { useT, useLang } from "@/components/language-provider";
+import { ToolAvatar } from "@/components/tool-avatar";
 
 const PROVIDERS = ["", "Anthropic", "OpenAI", "Google", "Independent"];
 
@@ -28,11 +29,6 @@ export default function ToolsPage() {
   return (
     <div className="max-w-[1120px] mx-auto px-6">
       <div className="pt-7 pb-5 border-b border-[var(--border)]">
-        <nav className="flex items-center gap-[6px] text-[12px] text-[var(--muted)] mb-[10px]">
-          <Link href="/" className="text-[var(--muted)] no-underline hover:text-[var(--fg)]">{t.nav.home}</Link>
-          <span className="opacity-40">/</span>
-          <span>{t.nav.tools}</span>
-        </nav>
         <h1 className="text-[20px] font-bold tracking-[-0.02em] mb-1">{t.tools.title}</h1>
         <p className="text-[13px] text-[var(--muted)]">{t.tools.subtitle(tools.length)}</p>
       </div>
@@ -67,8 +63,7 @@ export default function ToolsPage() {
           <Link key={tl.id} href={`/tools/${tl.slug}`}
             className="flex flex-col border border-[var(--border)] rounded-[8px] p-[18px_20px] no-underline text-[var(--fg)] hover:border-[#a1a1aa] hover:shadow-[0_2px_10px_rgba(0,0,0,.06)] transition-all cursor-pointer">
             <div className="flex items-start gap-[14px] mb-3">
-              <div className="w-10 h-10 rounded-[8px] flex-shrink-0 border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center font-mono text-[11px] font-bold"
-                style={{ color: tl.color }}>{tl.avatar}</div>
+              <ToolAvatar slug={tl.slug} avatar={tl.avatar} color={tl.color} size={40} />
               <div className="flex-1 min-w-0">
                 <div className="text-[15px] font-bold tracking-[-0.01em] mb-[2px]">{tl.name}</div>
                 <div className="text-[11px] text-[var(--muted)]">by {tl.company}</div>
