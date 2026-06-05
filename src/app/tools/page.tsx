@@ -29,8 +29,8 @@ export default function ToolsPage() {
   return (
     <div className="max-w-[1120px] mx-auto px-6">
       <div className="pt-7 pb-5 border-b border-[var(--border)]">
-        <h1 className="text-[20px] font-bold tracking-[-0.02em] mb-1">{t.tools.title}</h1>
-        <p className="text-[13px] text-[var(--muted)]">{t.tools.subtitle(tools.length)}</p>
+        <h1 className="font-mono text-[24px] font-bold tracking-[-0.03em] text-[var(--fg)] mb-1">{t.tools.title}</h1>
+        <p className="text-[14px] text-[var(--muted)]">{t.tools.subtitle(tools.length)}</p>
       </div>
 
       <div className="flex items-center gap-[10px] py-[18px] pb-4 flex-wrap">
