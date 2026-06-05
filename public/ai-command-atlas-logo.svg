@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="ai-command-atlas logo">
+  <defs>
+    <linearGradient id="bg" x1="32" y1="24" x2="224" y2="232" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#18181b"/>
+      <stop offset="0.62" stop-color="#09090b"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="58" y1="76" x2="140" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#93c5fd"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="14" y="14" width="228" height="228" rx="48" fill="url(#bg)"/>
+  <rect x="24" y="24" width="208" height="208" rx="38" fill="none" stroke="#27272a" stroke-width="4"/>
+
+  <path
+    d="M116 70 58 128l58 58"
+    fill="none"
+    stroke="url(#blue)"
+    stroke-width="26"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M132 181h66"
+    fill="none"
+    stroke="#f8fafc"
+    stroke-width="22"
+    stroke-linecap="round"
+  />
+</svg>

@@ -44,12 +44,15 @@ export interface Command {
   risk_level: RiskLevel;
   source: SourceType;
   description: string;
+  description_zh: string | null;
   syntax: string | null;
   value_hint: string | null;
   parameters: CommandParameter[] | null;
   examples: CommandExample[] | null;
   notes: string[] | null;
+  notes_zh: string[] | null;
   caveats: string[] | null;
+  caveats_zh: string[] | null;
   source_url: string | null;
   source_note: string | null;
   last_checked: string;
@@ -63,6 +66,7 @@ export interface SearchResult {
   tool_slug: string;
   tool_name: string;
   description: string;
+  description_zh: string | null;
   category: string;
   risk_level: RiskLevel;
 }

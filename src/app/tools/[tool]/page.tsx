@@ -1,8 +1,9 @@
 // src/app/tools/[tool]/page.tsx
+export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { getToolBySlug, getCommandsByTool } from "@/lib/queries";
 import { CatBadge } from "@/components/badge";
+import { Breadcrumb } from "@/components/breadcrumb";
 import { CommandTableClient } from "./command-table-client";
 
 export default async function ToolPage({ params }: { params: Promise<{ tool: string }> }) {
@@ -15,14 +16,11 @@ export default async function ToolPage({ params }: { params: Promise<{ tool: str
 
   return (
     <div className="max-w-[1120px] mx-auto px-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-[6px] py-[14px] text-[12px] text-[var(--muted)]">
-        <Link href="/" className="text-[var(--muted)] no-underline hover:text-[var(--fg)]">Home</Link>
-        <span className="opacity-40">/</span>
-        <Link href="/tools" className="text-[var(--muted)] no-underline hover:text-[var(--fg)]">Tools</Link>
-        <span className="opacity-40">/</span>
-        <span>{tool.name}</span>
-      </nav>
+      <Breadcrumb items={[
+        { href: "/", i18nKey: "home" },
+        { href: "/tools", i18nKey: "tools" },
+        { label: tool.name },
+      ]} />
 
       {/* Tool header */}
       <div className="pt-5 pb-6 border-b border-[var(--border)]">

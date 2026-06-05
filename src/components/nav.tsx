@@ -3,27 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
-import { useState, useEffect } from "react";
-
-const navLinks = [
-  { href: "/", label: "Home", zhLabel: "首页" },
-  { href: "/tools", label: "Tools", zhLabel: "工具" },
-  { href: "/compare", label: "Compare", zhLabel: "对比" },
-];
+import { useLang } from "./language-provider";
 
 export function Nav() {
   const path = usePathname();
-  const [lang, setLang] = useState("en");
+  const { lang, setLang, t } = useLang();
 
-  useEffect(() => {
-    const saved = localStorage.getItem("atlas-lang") || "en";
-    setLang(saved);
-  }, []);
-
-  const switchLang = (l: string) => {
-    setLang(l);
-    localStorage.setItem("atlas-lang", l);
-  };
+  const navLinks = [
+    { href: "/", label: t.nav.home },
+    { href: "/commands", label: t.nav.commands },
+    { href: "/tools", label: t.nav.tools },
+    { href: "/compare", label: t.nav.compare },
+  ];
 
   return (
     <nav className="nav-bg sticky top-0 z-50 h-12 px-6 border-b border-[var(--border)] backdrop-blur-sm flex items-center justify-between">
@@ -35,12 +26,12 @@ export function Nav() {
         {navLinks.map(l => (
           <Link key={l.href} href={l.href}
             className={`text-[13px] no-underline px-[10px] py-1 rounded-[var(--r)] transition-colors max-[600px]:hidden ${path === l.href ? "text-[var(--fg)] font-medium" : "text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface)]"}`}>
-            {lang === "zh" ? l.zhLabel : l.label}
+            {l.label}
           </Link>
         ))}
       </div>
       <div className="flex items-center gap-2">
-        <select value={lang} onChange={e => switchLang(e.target.value)}
+        <select value={lang} onChange={e => setLang(e.target.value as "en" | "zh")}
           className="h-7 pl-[9px] pr-6 border border-[var(--border)] rounded-[var(--r)] text-[12px] font-medium text-[var(--muted)] bg-[var(--bg)] cursor-pointer outline-none appearance-none hover:text-[var(--fg)] hover:border-[#a1a1aa] transition-colors"
           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2371717a'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 7px center', backgroundSize: '10px 6px' }}>
           <option value="en">English</option>

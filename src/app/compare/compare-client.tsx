@@ -4,16 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import type { Tool, CompareCapability, CompareEntry } from "@/types";
 import { RiskBadge, SourceBadge } from "@/components/badge";
+import { useT } from "@/components/language-provider";
 
-const TABS = [
-  { key: "model", label: "Model Selection" },
-  { key: "session", label: "Session Management" },
-  { key: "permission", label: "Permission / Sandbox" },
-  { key: "mcp", label: "MCP" },
-  { key: "config", label: "Config" },
-] as const;
-
-type CategoryKey = (typeof TABS)[number]["key"];
+type CategoryKey = "model" | "session" | "permission" | "mcp" | "config";
 
 interface CategoryData {
   capabilities: CompareCapability[];
@@ -23,6 +16,7 @@ interface CategoryData {
 
 function InlineCopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+  const t = useT();
   const copy = () => {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -38,7 +32,7 @@ function InlineCopyButton({ text }: { text: string }) {
           : "text-[var(--muted)] border-[var(--border)] hover:text-[var(--fg)] hover:border-[#a1a1aa]"
       }`}
     >
-      {copied ? "✓ Copied" : "Copy"}
+      {copied ? t.compare.copied : t.compare.copy}
     </button>
   );
 }
@@ -46,14 +40,26 @@ function InlineCopyButton({ text }: { text: string }) {
 export function CompareClient({
   allData,
   tools,
+  title,
+  subtitle,
 }: {
   allData: Record<CategoryKey, CategoryData>;
   tools: Tool[];
+  title?: string;
+  subtitle?: string;
 }) {
   const [activeTab, setActiveTab] = useState<CategoryKey>("model");
   const { capabilities, entries } = allData[activeTab];
+  const t = useT();
 
-  // Group entries by capability_id then by tool_id for fast lookup
+  const TABS: { key: CategoryKey; label: string }[] = [
+    { key: "model", label: t.compare.tabs.model },
+    { key: "session", label: t.compare.tabs.session },
+    { key: "permission", label: t.compare.tabs.permission },
+    { key: "mcp", label: t.compare.tabs.mcp },
+    { key: "config", label: t.compare.tabs.config },
+  ];
+
   const entryMap = new Map<string, CompareEntry>();
   entries.forEach((e) => {
     entryMap.set(`${e.capability_id}-${e.tool_id}`, e);
@@ -81,27 +87,24 @@ export function CompareClient({
 
       {/* Legend */}
       <div className="flex items-center gap-4 py-4 flex-wrap text-[12px] text-[var(--muted)]">
-        <span className="font-medium text-[var(--fg)]">Risk:</span>
+        <span className="font-medium text-[var(--fg)]">{t.compare.riskLabel}</span>
         <span className="flex items-center gap-[5px]">
           <span className="inline-flex items-center px-[6px] py-[1px] rounded-[3px] text-[10px] font-medium bg-[var(--risk-low-bg)] text-[var(--risk-low)]">
-            Low
+            {t.compare.low}
           </span>
-          Safe, reversible
+          {t.compare.safeLow}
         </span>
         <span className="flex items-center gap-[5px]">
           <span className="inline-flex items-center px-[6px] py-[1px] rounded-[3px] text-[10px] font-medium bg-[var(--risk-med-bg)] text-[var(--risk-med)]">
-            Medium
+            {t.compare.medium}
           </span>
-          Review before use
+          {t.compare.reviewMed}
         </span>
         <span className="flex items-center gap-[5px]">
           <span className="inline-flex items-center px-[6px] py-[1px] rounded-[3px] text-[10px] font-medium bg-[var(--risk-high-bg)] text-[var(--risk-high)]">
-            High
+            {t.compare.high}
           </span>
-          Potentially destructive
-        </span>
-        <span className="ml-auto text-[11px] text-[var(--muted)] hidden md:block">
-          Click a command to view full details
+          {t.compare.destructiveHigh}
         </span>
       </div>
 
@@ -111,19 +114,19 @@ export function CompareClient({
           <thead>
             <tr>
               <th className="text-left px-[14px] py-[10px] bg-[var(--surface)] border-b border-[var(--border)] text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] w-[180px]">
-                Capability
+                {t.compare.capability}
               </th>
-              {tools.map((t) => (
+              {tools.map((tl) => (
                 <th
-                  key={t.id}
+                  key={tl.id}
                   className="text-left px-[14px] py-[10px] bg-[var(--surface)] border-b border-[var(--border)] text-[12px] font-semibold text-[var(--fg)] w-[174px]"
                 >
                   <div className="flex items-center gap-[6px]">
                     <span
                       className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ background: t.color }}
+                      style={{ background: tl.color }}
                     />
-                    {t.name}
+                    {tl.name}
                   </div>
                 </th>
               ))}
@@ -137,7 +140,6 @@ export function CompareClient({
                   capIdx < capabilities.length - 1 ? "border-b border-[var(--border-light)]" : ""
                 }
               >
-                {/* Capability label */}
                 <td className="p-[14px] bg-[var(--surface)] border-r border-[var(--border)] align-top">
                   <div className="text-[12px] font-semibold text-[var(--fg)]">
                     {cap.capability}
@@ -147,12 +149,11 @@ export function CompareClient({
                   </div>
                 </td>
 
-                {/* Tool cells */}
-                {tools.map((t, tIdx) => {
-                  const entry = entryMap.get(`${cap.id}-${t.id}`);
+                {tools.map((tl, tIdx) => {
+                  const entry = entryMap.get(`${cap.id}-${tl.id}`);
                   return (
                     <td
-                      key={t.id}
+                      key={tl.id}
                       className={`px-[14px] py-3 align-top min-h-[60px] ${
                         tIdx < tools.length - 1 ? "border-r border-[var(--border-light)]" : ""
                       }`}
@@ -167,13 +168,13 @@ export function CompareClient({
                               opacity=".3"
                             />
                           </svg>
-                          {entry?.none_label || "Not available"}
+                          {entry?.none_label || t.compare.capability}
                         </div>
                       ) : (
                         <>
                           {entry.command_slug ? (
                             <Link
-                              href={`/commands/${t.slug}/${entry.command_slug}`}
+                              href={`/commands/${tl.slug}/${entry.command_slug}`}
                               className="font-mono text-[12px] font-semibold text-[var(--accent)] no-underline hover:underline mb-[3px] block"
                             >
                               {entry.command_name}

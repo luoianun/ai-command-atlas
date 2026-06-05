@@ -1,5 +1,7 @@
 // src/components/badge.tsx
+"use client";
 import type { RiskLevel, SourceType, CommandType } from "@/types";
+import { useT } from "./language-provider";
 
 const riskClass: Record<RiskLevel, string> = {
   low: "bg-[var(--risk-low-bg)] text-[var(--risk-low)]",
@@ -19,22 +21,19 @@ const typeClass: Record<CommandType, string> = {
   config: "bg-[#f4f4f5] text-[#52525b]",
 };
 
-const riskLabel: Record<RiskLevel, string> = { low: "Low", medium: "Medium", high: "High" };
-const sourceLabel: Record<SourceType, string> = { official: "Official", github: "GitHub", community: "Community" };
-const typeLabel: Record<CommandType, string> = {
-  option: "Option", slash: "Slash", subcommand: "Subcommand", flag: "Flag", config: "Config"
-};
-
 const badgeBase = "inline-flex items-center px-[7px] py-[2px] rounded-[4px] text-[11px] font-medium whitespace-nowrap";
 
 export function RiskBadge({ level }: { level: RiskLevel }) {
-  return <span className={`${badgeBase} ${riskClass[level]}`}>{riskLabel[level]}</span>;
+  const t = useT();
+  return <span className={`${badgeBase} ${riskClass[level]}`}>{t.badge[level]}</span>;
 }
 export function SourceBadge({ source }: { source: SourceType }) {
-  return <span className={`${badgeBase} ${sourceClass[source]}`}>{sourceLabel[source]}</span>;
+  const t = useT();
+  return <span className={`${badgeBase} ${sourceClass[source]}`}>{t.badge[source]}</span>;
 }
 export function TypeBadge({ type }: { type: CommandType }) {
-  return <span className={`${badgeBase} ${typeClass[type]}`}>{typeLabel[type]}</span>;
+  const t = useT();
+  return <span className={`${badgeBase} ${typeClass[type]}`}>{t.badge[type]}</span>;
 }
 export function CatBadge({ label }: { label: string }) {
   return <span className={`${badgeBase} bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]`}>{label}</span>;

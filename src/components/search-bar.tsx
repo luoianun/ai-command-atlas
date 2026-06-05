@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { SearchResult } from "@/types";
+import { useT, useLang } from "./language-provider";
 
 export function SearchBar({ activeTool }: { activeTool?: string }) {
   const [query, setQuery] = useState("");
@@ -10,6 +11,8 @@ export function SearchBar({ activeTool }: { activeTool?: string }) {
   const [focusIdx, setFocusIdx] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const t = useT();
+  const { lang } = useLang();
 
   const search = useCallback(async (q: string, tool?: string) => {
     if (!q.trim()) { setOpen(false); return; }
@@ -64,7 +67,7 @@ export function SearchBar({ activeTool }: { activeTool?: string }) {
         value={query}
         onChange={e => setQuery(e.target.value)}
         onKeyDown={onKeyDown}
-        placeholder="Search commands, tools, categories…"
+        placeholder={t.search.placeholder}
         autoComplete="off"
         spellCheck={false}
         className="w-full h-[46px] pl-10 pr-12 border border-[var(--border)] rounded-[var(--r)] font-mono text-[13px] text-[var(--fg)] bg-[var(--bg)] outline-none transition-[border-color,box-shadow] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(37,99,235,.08)]"
@@ -76,7 +79,7 @@ export function SearchBar({ activeTool }: { activeTool?: string }) {
         <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-[var(--r)] shadow-[0_8px_24px_rgba(0,0,0,.08)] z-[100] overflow-hidden text-left">
           {results.length === 0 ? (
             <div className="p-6 text-center text-[var(--muted)] text-[13px]">
-              No results for &ldquo;<strong>{query}</strong>&rdquo;
+              {t.search.noResults} &ldquo;<strong>{query}</strong>&rdquo;
             </div>
           ) : (
             <>
@@ -87,13 +90,13 @@ export function SearchBar({ activeTool }: { activeTool?: string }) {
                   className={`w-full flex items-center gap-[10px] px-[14px] py-[9px] cursor-pointer text-[var(--fg)] transition-colors text-left border-0 bg-transparent ${i === focusIdx ? "bg-[var(--surface)]" : "hover:bg-[var(--surface)]"}`}
                 >
                   <span className="font-mono text-[12px] font-medium text-[var(--accent)] min-w-[160px]">{r.name}</span>
-                  <span className="text-[12px] text-[var(--muted)] flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{r.description}</span>
+                  <span className="text-[12px] text-[var(--muted)] flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{lang === "zh" && r.description_zh ? r.description_zh : r.description}</span>
                   <span className="text-[10px] font-medium text-[var(--muted)] bg-[var(--surface)] border border-[var(--border)] rounded-[4px] px-[6px] py-[1px] whitespace-nowrap">{r.tool_name}</span>
                 </button>
               ))}
               <div className="flex justify-between px-[14px] py-[7px] border-t border-[var(--border-light)] text-[11px] text-[var(--muted)]">
-                <span>↑↓ navigate</span>
-                <span>↵ open · Esc close</span>
+                <span>{t.search.navigate}</span>
+                <span>{t.search.open}</span>
               </div>
             </>
           )}

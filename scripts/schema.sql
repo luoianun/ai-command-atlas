@@ -1,4 +1,5 @@
 CREATE DATABASE IF NOT EXISTS ai_command_atlas CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET NAMES utf8mb4;
 USE ai_command_atlas;
 
 CREATE TABLE IF NOT EXISTS tools (
@@ -27,12 +28,15 @@ CREATE TABLE IF NOT EXISTS commands (
   risk_level ENUM('low','medium','high') NOT NULL DEFAULT 'low',
   source ENUM('official','github','community') NOT NULL DEFAULT 'official',
   description TEXT NOT NULL,
+  description_zh TEXT DEFAULT NULL,
   syntax TEXT DEFAULT NULL,
   value_hint VARCHAR(256) DEFAULT NULL,
   parameters JSON DEFAULT NULL,
   examples JSON DEFAULT NULL,
   notes JSON DEFAULT NULL,
+  notes_zh JSON DEFAULT NULL,
   caveats JSON DEFAULT NULL,
+  caveats_zh JSON DEFAULT NULL,
   source_url VARCHAR(512) DEFAULT NULL,
   source_note TEXT DEFAULT NULL,
   related_command_ids JSON DEFAULT NULL,

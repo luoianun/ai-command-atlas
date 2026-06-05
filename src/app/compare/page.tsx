@@ -1,9 +1,10 @@
 // src/app/compare/page.tsx
+export const dynamic = "force-dynamic";
 import { getCompareData, getTools } from "@/lib/queries";
 import { CompareClient } from "./compare-client";
+import { CompareHeader } from "./compare-header";
 
 export default async function ComparePage() {
-  // Fetch all 5 categories upfront — small dataset, no lazy loading needed
   const [modelData, sessionData, permissionData, mcpData, configData, tools] = await Promise.all([
     getCompareData("model"),
     getCompareData("session"),
@@ -23,17 +24,7 @@ export default async function ComparePage() {
 
   return (
     <div className="max-w-[1280px] mx-auto px-6">
-      {/* Page header */}
-      <div className="py-8 pb-6 border-b border-[var(--border)]">
-        <h1 className="text-[22px] font-bold tracking-[-0.02em] mb-[6px]">
-          Compare AI CLI Commands
-        </h1>
-        <p className="text-[13px] text-[var(--muted)]">
-          Side-by-side comparison of equivalent capabilities across Claude Code, Codex CLI, Gemini
-          CLI, Aider, and OpenCode.
-        </p>
-      </div>
-
+      <CompareHeader />
       <CompareClient allData={allData} tools={tools} />
     </div>
   );

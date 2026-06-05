@@ -4,14 +4,9 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Command, CommandType } from "@/types";
 import { RiskBadge, SourceBadge, TypeBadge, CatBadge } from "@/components/badge";
+import { useT, useLang } from "@/components/language-provider";
 
 type Tab = "all" | CommandType;
-const TABS: { key: Tab; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "option", label: "Command Options" },
-  { key: "slash", label: "Slash Commands" },
-  { key: "config", label: "Config" },
-];
 
 const CATEGORIES = ["", "Model", "Permission", "Session", "Config", "MCP", "Output"];
 const RISKS = ["", "Low", "Medium", "High"];
@@ -22,6 +17,16 @@ export function CommandTableClient({ commands, toolSlug }: { commands: Command[]
   const [cat, setCat] = useState("");
   const [risk, setRisk] = useState("");
   const router = useRouter();
+  const t = useT();
+  const { lang } = useLang();
+  const desc = (c: Command) => lang === "zh" && c.description_zh ? c.description_zh : c.description;
+
+  const TABS: { key: Tab; label: string }[] = [
+    { key: "all", label: t.commands.tabs.all },
+    { key: "option", label: t.commands.tabs.option },
+    { key: "slash", label: t.commands.tabs.slash },
+    { key: "config", label: t.commands.tabs.config },
+  ];
 
   const tabCounts = useMemo(() => {
     const counts: Record<string, number> = { all: commands.length };
@@ -42,55 +47,52 @@ export function CommandTableClient({ commands, toolSlug }: { commands: Command[]
 
   return (
     <>
-      {/* Tabs */}
       <div className="flex gap-[2px] border-b border-[var(--border)] pt-4 overflow-x-auto">
-        {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
+        {TABS.map(tb => (
+          <button key={tb.key} onClick={() => setTab(tb.key)}
             className={`flex items-center gap-[6px] px-[14px] py-[7px] text-[13px] font-medium cursor-pointer border-b-2 mb-[-1px] transition-colors bg-transparent border-x-0 border-t-0 whitespace-nowrap
-              ${tab === t.key
+              ${tab === tb.key
                 ? "text-[var(--fg)] border-b-[var(--fg)]"
                 : "text-[var(--muted)] border-b-transparent hover:text-[var(--fg)]"}`}>
-            {t.label}
+            {tb.label}
             <span className="font-mono text-[10px] font-semibold bg-[var(--surface)] border border-[var(--border)] rounded-[4px] px-[5px] text-[var(--muted)]">
-              {t.key === "all" ? tabCounts["all"] : (tabCounts[t.key] || 0)}
+              {tb.key === "all" ? tabCounts["all"] : (tabCounts[tb.key] || 0)}
             </span>
           </button>
         ))}
       </div>
 
-      {/* Toolbar */}
       <div className="flex items-center justify-between py-4 gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
             <svg className="absolute left-[9px] top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" width="13" height="13" viewBox="0 0 15 15" fill="none">
               <path d="M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zm-.657 3.757 2.7 2.7-.707.707-2.7-2.7a4.5 4.5 0 11.707-.707z" fill="currentColor" fillRule="evenodd"/>
             </svg>
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Filter commands…"
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t.commands.filterPlaceholder}
               className="h-[34px] pl-[32px] pr-[10px] w-[220px] border border-[var(--border)] rounded-[var(--r)] font-mono text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none focus:border-[var(--accent)] transition-colors placeholder:font-sans placeholder:text-[var(--muted)]" />
           </div>
           <select value={cat} onChange={e => setCat(e.target.value)}
             className="h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
-            {CATEGORIES.map(c => <option key={c} value={c}>{c || "All categories"}</option>)}
+            {CATEGORIES.map(c => <option key={c} value={c}>{c || t.commands.allCategories}</option>)}
           </select>
           <select value={risk} onChange={e => setRisk(e.target.value)}
             className="h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
-            {RISKS.map(r => <option key={r} value={r}>{r || "All risks"}</option>)}
+            {RISKS.map(r => <option key={r} value={r}>{r || t.commands.allRisks}</option>)}
           </select>
         </div>
-        <span className="text-[12px] text-[var(--muted)]">{filtered.length} command{filtered.length !== 1 ? "s" : ""}</span>
+        <span className="text-[12px] text-[var(--muted)]">{t.commands.commandCount(filtered.length)}</span>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto mb-12">
         <table className="w-full border-collapse border border-[var(--border)] rounded-[var(--r)] overflow-hidden text-[13px]">
           <thead>
             <tr>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[200px] whitespace-nowrap">Command</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[90px]">Type</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)]">Description</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[110px]">Category</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[76px]">Risk</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[96px]">Source</th>
+              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[200px] whitespace-nowrap">{t.commands.command}</th>
+              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[90px]">{t.commands.type}</th>
+              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)]">{t.commands.description}</th>
+              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[110px]">{t.commands.category}</th>
+              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[76px]">{t.commands.risk}</th>
+              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[96px]">{t.commands.source}</th>
             </tr>
           </thead>
           <tbody>
@@ -102,7 +104,7 @@ export function CommandTableClient({ commands, toolSlug }: { commands: Command[]
                   {cmd.value_hint && <div className="font-mono text-[11px] text-[var(--muted)] mt-[2px]">{cmd.value_hint}</div>}
                 </td>
                 <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><TypeBadge type={cmd.command_type} /></td>
-                <td className={`px-[14px] py-[10px] text-[var(--fg)] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>{cmd.description}</td>
+                <td className={`px-[14px] py-[10px] text-[var(--fg)] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>{desc(cmd)}</td>
                 <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><CatBadge label={cmd.category} /></td>
                 <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><RiskBadge level={cmd.risk_level} /></td>
                 <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><SourceBadge source={cmd.source} /></td>
@@ -111,8 +113,8 @@ export function CommandTableClient({ commands, toolSlug }: { commands: Command[]
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-[var(--muted)]">
-                  <strong className="text-[var(--fg)] block text-[14px] mb-[6px]">No commands found</strong>
-                  Try clearing the filters.
+                  <strong className="text-[var(--fg)] block text-[14px] mb-[6px]">{t.commands.noCommandsFound}</strong>
+                  {t.commands.clearFilters}
                 </td>
               </tr>
             )}
