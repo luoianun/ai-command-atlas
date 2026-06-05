@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { Tool } from "@/types";
-import { useT } from "@/components/language-provider";
+import { useT, useLang } from "@/components/language-provider";
 
 const PROVIDERS = ["", "Anthropic", "OpenAI", "Google", "Independent"];
 
@@ -12,6 +12,7 @@ export default function ToolsPage() {
   const [query, setQuery] = useState("");
   const [provider, setProvider] = useState("");
   const t = useT();
+  const { lang } = useLang();
 
   useEffect(() => {
     fetch("/api/tools").then(r => r.json()).then(setTools);
@@ -73,7 +74,7 @@ export default function ToolsPage() {
                 <div className="text-[11px] text-[var(--muted)]">by {tl.company}</div>
               </div>
             </div>
-            <p className="text-[12px] text-[var(--muted)] leading-[1.55] mb-[14px] flex-1 line-clamp-3">{tl.description}</p>
+            <p className="text-[12px] text-[var(--muted)] leading-[1.55] mb-[14px] flex-1 line-clamp-3">{lang === "zh" && tl.description_zh ? tl.description_zh : tl.description}</p>
             <div className="flex items-center gap-[6px] flex-wrap pt-3 border-t border-[var(--border-light)]">
               <span className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: tl.color }} />
               <span className="inline-flex items-center px-[7px] py-[2px] rounded-[4px] text-[11px] font-medium bg-[var(--surface)] text-[var(--fg)] border border-[var(--border)] font-mono">

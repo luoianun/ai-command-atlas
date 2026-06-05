@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS tools (
   name VARCHAR(128) NOT NULL,
   company VARCHAR(128) NOT NULL,
   description TEXT NOT NULL,
+  description_zh TEXT DEFAULT NULL,
   color VARCHAR(16) NOT NULL,
   avatar VARCHAR(8) NOT NULL,
   version VARCHAR(32) NOT NULL,

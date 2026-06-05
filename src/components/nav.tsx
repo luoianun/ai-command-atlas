@@ -25,7 +25,7 @@ export function Nav() {
         <div className="w-px h-5 bg-[var(--border)] mx-[6px]" />
         {navLinks.map(l => (
           <Link key={l.href} href={l.href}
-            className={`text-[13px] no-underline px-[10px] py-1 rounded-[var(--r)] transition-colors max-[600px]:hidden ${path === l.href ? "text-[var(--fg)] font-medium" : "text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface)]"}`}>
+            className={`text-[13px] no-underline px-[10px] py-1 rounded-[var(--r)] transition-colors max-[600px]:hidden ${(l.href === "/" ? path === l.href : path === l.href || path.startsWith(l.href + "/")) ? "text-[var(--accent)] font-medium bg-[var(--surface)]" : "text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface)]"}`}>
             {l.label}
           </Link>
         ))}
