@@ -10,6 +10,7 @@ export interface Tool {
   name: string;
   company: string;
   description: string;
+  description_zh: string | null;
   color: string;
   avatar: string;
   version: string;
