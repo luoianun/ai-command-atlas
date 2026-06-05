@@ -17,7 +17,7 @@ export function CommandDetailClient({ cmd, similar }: { cmd: Command; similar: C
           <div className="mb-4">
             <div className="flex gap-[6px] flex-wrap mb-2">
               <TypeBadge type={cmd.command_type} />
-              <CatBadge label={cmd.category} />
+              <CatBadge label={t.commands.categories[cmd.category as keyof typeof t.commands.categories] ?? cmd.category} />
               <RiskBadge level={cmd.risk_level} />
               <SourceBadge source={cmd.source} />
             </div>
@@ -123,8 +123,8 @@ export function CommandDetailClient({ cmd, similar }: { cmd: Command; similar: C
             </div>
             {[
               { k: t.detail.tool, v: <Link href={`/tools/${cmd.tool_slug}`} className="text-[var(--accent)] no-underline hover:underline">{cmd.tool_name}</Link> },
-              { k: t.detail.type, v: <span className="capitalize">{cmd.command_type}</span> },
-              { k: t.detail.category, v: cmd.category },
+              { k: t.detail.type, v: <span>{t.badge[cmd.command_type as keyof typeof t.badge] ?? cmd.command_type}</span> },
+              { k: t.detail.category, v: t.commands.categories[cmd.category as keyof typeof t.commands.categories] ?? cmd.category },
               { k: t.detail.risk, v: <RiskBadge level={cmd.risk_level} /> },
               { k: t.detail.source, v: <SourceBadge source={cmd.source} /> },
               { k: t.detail.lastChecked, v: <span className="font-mono text-[11px]">{cmd.last_checked}</span> },

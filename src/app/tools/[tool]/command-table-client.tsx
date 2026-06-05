@@ -73,7 +73,7 @@ export function CommandTableClient({ commands, toolSlug }: { commands: Command[]
           </div>
           <select value={cat} onChange={e => setCat(e.target.value)}
             className="h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
-            {CATEGORIES.map(c => <option key={c} value={c}>{c || t.commands.allCategories}</option>)}
+            {CATEGORIES.map(c => <option key={c} value={c}>{c ? (t.commands.categories[c as keyof typeof t.commands.categories] ?? c) : t.commands.allCategories}</option>)}
           </select>
           <select value={risk} onChange={e => setRisk(e.target.value)}
             className="h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
@@ -105,7 +105,7 @@ export function CommandTableClient({ commands, toolSlug }: { commands: Command[]
                 </td>
                 <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><TypeBadge type={cmd.command_type} /></td>
                 <td className={`px-[14px] py-[10px] text-[var(--fg)] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>{desc(cmd)}</td>
-                <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><CatBadge label={cmd.category} /></td>
+                <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><CatBadge label={t.commands.categories[cmd.category as keyof typeof t.commands.categories] ?? cmd.category} /></td>
                 <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><RiskBadge level={cmd.risk_level} /></td>
                 <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><SourceBadge source={cmd.source} /></td>
               </tr>

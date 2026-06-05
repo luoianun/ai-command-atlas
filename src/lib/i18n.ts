@@ -33,6 +33,7 @@ export const dictionaries = {
       clearFilters: "Try clearing the filters.",
       tabs: { all: "All", option: "Options", slash: "Slash", subcommand: "Subcommand", flag: "Flag", config: "Config" },
       commandCount: (n: number) => `${n} command${n !== 1 ? "s" : ""}`,
+      categories: { Model: "Model", Session: "Session", Permission: "Permission", Config: "Config", MCP: "MCP", "Slash Commands": "Slash Commands" },
     },
     tools: {
       title: "AI CLI Tools",
@@ -133,6 +134,7 @@ export const dictionaries = {
       clearFilters: "请尝试清除筛选条件。",
       tabs: { all: "全部", option: "参数", slash: "斜杠", subcommand: "子命令", flag: "标志", config: "配置" },
       commandCount: (n: number) => `${n} 条命令`,
+      categories: { Model: "模型", Session: "会话", Permission: "权限", Config: "配置", MCP: "MCP", "Slash Commands": "斜杠命令" },
     },
     tools: {
       title: "AI CLI 工具",
