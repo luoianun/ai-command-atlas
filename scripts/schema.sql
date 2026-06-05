@@ -55,7 +55,9 @@ CREATE TABLE IF NOT EXISTS commands (
 CREATE TABLE IF NOT EXISTS compare_capabilities (
   id INT AUTO_INCREMENT PRIMARY KEY,
   capability VARCHAR(128) NOT NULL,
+  capability_zh VARCHAR(128) DEFAULT NULL,
   capability_desc TEXT NOT NULL,
+  capability_desc_zh TEXT DEFAULT NULL,
   category ENUM('model','session','permission','mcp','config') NOT NULL,
   sort_order INT NOT NULL DEFAULT 0
 );
@@ -68,7 +70,9 @@ CREATE TABLE IF NOT EXISTS compare_entries (
   command_name VARCHAR(256) DEFAULT NULL,
   command_slug VARCHAR(128) DEFAULT NULL,
   command_desc TEXT DEFAULT NULL,
+  command_desc_zh TEXT DEFAULT NULL,
   none_label VARCHAR(256) DEFAULT NULL,
+  none_label_zh VARCHAR(256) DEFAULT NULL,
   risk_level ENUM('low','medium','high') DEFAULT NULL,
   source ENUM('official','github','community') DEFAULT NULL,
   copy_text VARCHAR(512) DEFAULT NULL,
