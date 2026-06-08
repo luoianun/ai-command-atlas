@@ -79,7 +79,6 @@ export async function fetchWithPlaywright(url: string, waitSelector?: string): P
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({
     headless: true,
-    channel: "chrome",
   });
   try {
     const page = await browser.newPage();
