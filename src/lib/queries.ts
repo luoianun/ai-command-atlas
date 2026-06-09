@@ -52,16 +52,44 @@ export async function getRecentCommands(limit = 10): Promise<Command[]> {
 }
 
 export async function searchCommands(q: string, toolSlug?: string): Promise<SearchResult[]> {
-  const params: any[] = [`%${q}%`, `%${q}%`, `%${q}%`];
+  const like = `%${q}%`;
+  const prefix = `${q}%`;
+  // Weighted relevance: exact name > prefix name > name contains > description contains
+  const params: any[] = [q, prefix, like, like, like];
   let sql = `SELECT c.id, c.slug, c.name, c.description, c.description_zh, c.category, c.risk_level,
-               t.slug as tool_slug, t.name as tool_name
+               t.slug as tool_slug, t.name as tool_name,
+               CASE
+                 WHEN LOWER(c.name) = LOWER(?) THEN 4
+                 WHEN LOWER(c.name) LIKE LOWER(?) THEN 3
+                 WHEN c.name LIKE ? THEN 2
+                 WHEN c.description LIKE ? OR c.description_zh LIKE ? THEN 1
+                 ELSE 0
+               END AS relevance
              FROM commands c JOIN tools t ON t.id = c.tool_id
-             WHERE (c.name LIKE ? OR c.description LIKE ? OR c.category LIKE ?)`;
+             WHERE (c.name LIKE ? OR c.description LIKE ? OR c.description_zh LIKE ?)`;
+  params.push(like, like, like);
   if (toolSlug && toolSlug !== "all") {
     sql += ` AND t.slug = ?`;
     params.push(toolSlug);
   }
-  sql += ` ORDER BY c.name LIMIT 20`;
+  sql += ` ORDER BY relevance DESC, c.name LIMIT 20`;
+  const [rows] = await pool.query<any[]>(sql, params);
+  return rows;
+}
+
+export async function suggestCommands(q: string, toolSlug?: string): Promise<{ name: string; tool_name: string; tool_slug: string; slug: string }[]> {
+  const prefix = `${q}%`;
+  const like = `%${q}%`;
+  const params: any[] = [prefix, like];
+  let sql = `SELECT c.slug, c.name, t.slug as tool_slug, t.name as tool_name
+             FROM commands c JOIN tools t ON t.id = c.tool_id
+             WHERE (c.name LIKE ? OR c.name LIKE ?)`;
+  if (toolSlug && toolSlug !== "all") {
+    sql += ` AND t.slug = ?`;
+    params.push(toolSlug);
+  }
+  sql += ` ORDER BY CASE WHEN c.name LIKE ? THEN 0 ELSE 1 END, c.name LIMIT 8`;
+  params.push(prefix);
   const [rows] = await pool.query<any[]>(sql, params);
   return rows;
 }
