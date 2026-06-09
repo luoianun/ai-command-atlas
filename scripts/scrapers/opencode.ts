@@ -173,7 +173,7 @@ function parseCliPage(html: string, url: string): Map<string, ParsedEntry> {
       // Determine column positions from header row
       const headerCells = $el.find("thead tr th, thead tr td, tbody tr:first-child th");
       const headers: string[] = [];
-      headerCells.each((_, th) => headers.push($(th).text().trim().toLowerCase()));
+      headerCells.each((_, th) => { headers.push($(th).text().trim().toLowerCase()); });
 
       // Detect column indices
       const flagCol = headers.findIndex(h => h === "flag" || h === "标志" || h === "标记");
