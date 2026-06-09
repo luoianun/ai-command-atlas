@@ -1,19 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Rounded square background, split diagonally: top-left white, bottom-right green -->
-  <rect width="32" height="32" rx="7" fill="#00C853"/>
+  <rect width="32" height="32" rx="7" fill="#0a0a0a"/>
+  <defs>
+    <!-- Clip to icon boundary -->
+    <clipPath id="qshape">
+      <ellipse cx="16" cy="16" rx="11" ry="13"/>
+    </clipPath>
+    <!-- Green right half clip -->
+    <clipPath id="qgreen">
+      <rect x="15.5" y="0" width="16" height="32"/>
+    </clipPath>
+  </defs>
 
-  <!-- White triangle top-left region (diagonal split) -->
-  <clipPath id="roundClip">
-    <rect width="32" height="32" rx="7"/>
-  </clipPath>
-  <polygon points="0,0 32,0 0,32" fill="white" clip-path="url(#roundClip)"/>
+  <!-- Full shape in white -->
+  <ellipse cx="16" cy="16" rx="11" ry="13" fill="white"/>
 
-  <!-- Q circular cutout in the green area — the "tail" of Q -->
-  <!-- A circle knocked out from the green zone (bottom-right) -->
-  <!-- White filled circle with green center to simulate Q hole -->
-  <circle cx="21" cy="21" r="5.5" fill="white" clip-path="url(#roundClip)"/>
-  <circle cx="21" cy="21" r="3.2" fill="#00C853" clip-path="url(#roundClip)"/>
+  <!-- Right portion overdrawn in green -->
+  <ellipse cx="16" cy="16" rx="11" ry="13" fill="#00C853" clip-path="url(#qgreen)"/>
 
-  <!-- Q tail slash line -->
-  <line x1="23.5" y1="23.5" x2="26.5" y2="26.5" stroke="white" stroke-width="2.2" stroke-linecap="round" clip-path="url(#roundClip)"/>
+  <!-- Black counter circle — creates the "q" / "a" letterform -->
+  <circle cx="16.5" cy="13.5" r="7" fill="#0a0a0a" clip-path="url(#qshape)"/>
 </svg>

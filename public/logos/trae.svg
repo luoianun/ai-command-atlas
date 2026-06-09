@@ -1,16 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Black background -->
   <rect width="32" height="32" rx="7" fill="#0a0a0a"/>
 
-  <!-- Stylized "T" with the Trae brand feel - thick geometric letterform -->
-  <!-- Top horizontal bar of T -->
-  <rect x="5" y="8" width="22" height="4" rx="1" fill="white"/>
-  <!-- Vertical stem of T -->
-  <rect x="14" y="12" width="4" height="14" rx="1" fill="white"/>
+  <!-- Green outer rounded-rect frame (offset: thicker on left+bottom) -->
+  <rect x="2" y="8" width="25" height="16" rx="2.5" fill="#2EE65A"/>
 
-  <!-- The signature "E bracket" motif - small decorative element bottom right -->
-  <!-- Looks like the modified E from the Trae wordmark: a C-bracket open to right -->
-  <rect x="21" y="17" width="5" height="1.8" rx="0.5" fill="white" opacity="0.55"/>
-  <rect x="21" y="20.2" width="5" height="1.8" rx="0.5" fill="white" opacity="0.55"/>
-  <rect x="21" y="17" width="1.8" height="5" rx="0.5" fill="white" opacity="0.55"/>
+  <!-- Black inner rect (offset upper-right, leaving more green on left+bottom) -->
+  <rect x="7" y="10" width="18" height="12" rx="1.5" fill="#0a0a0a"/>
+
+  <!-- Left diamond (green, rotated 45°) -->
+  <rect x="10" y="14" width="4.5" height="4.5" fill="#2EE65A" transform="rotate(45 12.25 16.25)"/>
+
+  <!-- Right diamond (green, rotated 45°) -->
+  <rect x="17.5" y="14" width="4.5" height="4.5" fill="#2EE65A" transform="rotate(45 19.75 16.25)"/>
 </svg>
