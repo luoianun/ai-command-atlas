@@ -6,11 +6,11 @@ export interface ScrapedCommand {
   description: string;
   description_zh?: string | null;
   syntax: string | null;
-  value_hint: string | null;
-  parameters: ScrapedParameter[] | null;
-  examples: ScrapedExample[] | null;
-  notes: string[] | null;
-  caveats: string[] | null;
+  value_hint?: string | null;
+  parameters?: ScrapedParameter[] | null;
+  examples?: ScrapedExample[] | null;
+  notes?: string[] | null;
+  caveats?: string[] | null;
   source_url: string;
   risk_level?: "low" | "medium" | "high";
 }
