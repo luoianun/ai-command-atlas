@@ -31,9 +31,8 @@ interface ParsedEntry {
   source_url: string;
 }
 
-function makeSlug(parent: string, flag: string): string {
-  const flagPart = flag.replace(/^--/, "").replace(/\s+.*$/, "").toLowerCase();
-  return parent ? `${parent}-${flagPart}` : flagPart;
+function makeSlug(_parent: string, flag: string): string {
+  return flag.replace(/^--/, "").replace(/\s+.*$/, "").toLowerCase();
 }
 
 function parseCliPage(html: string, url: string): Map<string, ParsedEntry> {
@@ -125,7 +124,7 @@ function parseCliPage(html: string, url: string): Map<string, ParsedEntry> {
           description,
           command_type: valueHint ? "option" : "flag",
           category: currentCategory,
-          syntax: `opencode ${currentH3} ${flagText}`.trim(),
+          syntax: `opencode ${flagText}`.trim(),
           value_hint: valueHint,
           source_url: url,
         });
@@ -204,7 +203,7 @@ function parseCliPage(html: string, url: string): Map<string, ParsedEntry> {
               description_zh: desc,
               command_type: valueHint ? "option" : "flag",
               category: currentCategory,
-              syntax: `opencode ${currentH3} ${flagName}`.replace(/\s+/g, " ").trim(),
+              syntax: `opencode ${flagName}`.trim(),
               value_hint: valueHint,
               source_url: url.replace("/zh-cn/", "/"),
             });
@@ -217,7 +216,7 @@ function parseCliPage(html: string, url: string): Map<string, ParsedEntry> {
               description: desc,
               command_type: valueHint ? "option" : "flag",
               category: currentCategory,
-              syntax: `opencode ${currentH3} ${flagName}`.replace(/\s+/g, " ").trim(),
+              syntax: `opencode ${flagName}`.trim(),
               value_hint: valueHint,
               source_url: url,
             });
