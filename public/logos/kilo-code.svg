@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#1a1a1a"/>
+  <!-- K letter -->
+  <path d="M9 8 L9 24" stroke="#FACC15" stroke-width="3" stroke-linecap="round"/>
+  <path d="M9 16 L20 8" stroke="#FACC15" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M9 16 L20 24" stroke="#FACC15" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Accent bar -->
+  <path d="M22 16 L24 16" stroke="#FACC15" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+</svg>

@@ -10,7 +10,7 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
 const log = createLogger("runner");
 
-const TOOL_SLUGS = ["aider", "gemini-cli", "opencode", "claude-code", "codex-cli"];
+const TOOL_SLUGS = ["aider", "gemini-cli", "opencode", "claude-code", "codex-cli", "goose", "cline", "kiro", "gh-copilot", "qoder", "trae", "kilo-code"];
 
 type ScraperModule = { scrape: () => Promise<ScrapedCommand[]> };
 
@@ -20,6 +20,13 @@ const scraperMap: Record<string, () => Promise<ScraperModule>> = {
   opencode: () => import("./opencode.js"),
   "claude-code": () => import("./claude-code.js"),
   "codex-cli": () => import("./codex-cli.js"),
+  goose: () => import("./goose.js"),
+  cline: () => import("./cline.js"),
+  kiro: () => import("./kiro.js"),
+  "gh-copilot": () => import("./gh-copilot.js"),
+  qoder: () => import("./qoder.js"),
+  trae: () => import("./trae.js"),
+  "kilo-code": () => import("./kilo-code.js"),
 };
 
 function parseArgs(): RunOptions {

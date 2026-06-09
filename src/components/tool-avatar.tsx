@@ -2,11 +2,18 @@
 import Image from "next/image";
 
 const LOGO_MAP: Record<string, { src: string; type: "svg" | "png" }> = {
-  "claude-code": { src: "/logos/claude-code.svg", type: "svg" },
-  "codex-cli":   { src: "/logos/codex-cli.svg",   type: "svg" },
-  "gemini-cli":  { src: "/logos/gemini-cli.svg",  type: "svg" },
-  "aider":       { src: "/logos/aider.svg",        type: "svg" },
-  "opencode":    { src: "/logos/opencode.png",     type: "png" },
+  "claude-code": { src: "/logos/claude-code.svg",  type: "svg" },
+  "codex-cli":   { src: "/logos/codex-cli.svg",    type: "svg" },
+  "gemini-cli":  { src: "/logos/gemini-cli.svg",   type: "svg" },
+  "aider":       { src: "/logos/aider.svg",         type: "svg" },
+  "opencode":    { src: "/logos/opencode.png",      type: "png" },
+  "goose":       { src: "/logos/goose.svg",         type: "svg" },
+  "cline":       { src: "/logos/cline.svg",         type: "svg" },
+  "kiro":        { src: "/logos/kiro.svg",          type: "svg" },
+  "gh-copilot":  { src: "/logos/gh-copilot.svg",   type: "svg" },
+  "qoder":       { src: "/logos/qoder.svg",         type: "svg" },
+  "trae":        { src: "/logos/trae.svg",          type: "svg" },
+  "kilo-code":   { src: "/logos/kilo-code.svg",     type: "svg" },
 };
 
 interface ToolAvatarProps {

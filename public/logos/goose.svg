@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#00B5B5"/>
+  <!-- Goose body -->
+  <ellipse cx="16" cy="20" rx="7" ry="5" fill="white"/>
+  <!-- Goose neck -->
+  <path d="M14 20 Q13 15 15 11 Q17 8 19 9 Q18 11 17 13 Q16 16 15 20Z" fill="white"/>
+  <!-- Beak -->
+  <path d="M19 9 L22 10 L20 11Z" fill="#FF9900"/>
+  <!-- Eye -->
+  <circle cx="19.5" cy="10" r="1" fill="#00B5B5"/>
+  <!-- Wing detail -->
+  <path d="M10 21 Q16 18 22 21" stroke="#00B5B5" stroke-width="1" fill="none" opacity="0.4"/>
+</svg>
