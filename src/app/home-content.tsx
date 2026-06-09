@@ -2,6 +2,7 @@
 import Link from "next/link";
 import type { Command, Tool, Stats } from "@/types";
 import { RiskBadge, SourceBadge, CatBadge } from "@/components/badge";
+import { ToolAvatar } from "@/components/tool-avatar";
 import { HeroSection } from "./home-hero";
 import { useT, useLang } from "@/components/language-provider";
 
@@ -116,8 +117,7 @@ export function HomeContent({
           {tools.map(tl => (
             <Link key={tl.id} href={`/tools/${tl.slug}`}
               className="flex items-center gap-3 p-3 border border-[var(--border)] rounded-[var(--r)] no-underline text-[var(--fg)] hover:border-[#a1a1aa] hover:shadow-[0_1px_6px_rgba(0,0,0,.05)] transition-all mb-[6px] group">
-              <div className="w-8 h-8 rounded-[var(--r)] border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center font-mono text-[10px] font-bold flex-shrink-0"
-                style={{ color: tl.color }}>{tl.avatar}</div>
+              <ToolAvatar slug={tl.slug} avatar={tl.avatar} color={tl.color} size={32} />
               <div>
                 <div className="text-[13px] font-semibold">{tl.name}</div>
                 <div className="text-[11px] text-[var(--muted)] mt-[1px]">{tl.command_count} {t.tools.commands} · {tl.company}</div>
