@@ -1,15 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <defs>
-    <linearGradient id="traeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#4F46E5"/>
-      <stop offset="100%" style="stop-color:#7C3AED"/>
-    </linearGradient>
-  </defs>
-  <rect width="32" height="32" rx="7" fill="url(#traeGrad)"/>
-  <!-- T letter with tech accent -->
-  <path d="M8 10 L24 10" stroke="white" stroke-width="3" stroke-linecap="round"/>
-  <path d="M16 10 L16 24" stroke="white" stroke-width="3" stroke-linecap="round"/>
-  <!-- Accent dots -->
-  <circle cx="8" cy="10" r="1.5" fill="rgba(255,255,255,0.6)"/>
-  <circle cx="24" cy="10" r="1.5" fill="rgba(255,255,255,0.6)"/>
+  <!-- Black background -->
+  <rect width="32" height="32" rx="7" fill="#0a0a0a"/>
+
+  <!-- Stylized "T" with the Trae brand feel - thick geometric letterform -->
+  <!-- Top horizontal bar of T -->
+  <rect x="5" y="8" width="22" height="4" rx="1" fill="white"/>
+  <!-- Vertical stem of T -->
+  <rect x="14" y="12" width="4" height="14" rx="1" fill="white"/>
+
+  <!-- The signature "E bracket" motif - small decorative element bottom right -->
+  <!-- Looks like the modified E from the Trae wordmark: a C-bracket open to right -->
+  <rect x="21" y="17" width="5" height="1.8" rx="0.5" fill="white" opacity="0.55"/>
+  <rect x="21" y="20.2" width="5" height="1.8" rx="0.5" fill="white" opacity="0.55"/>
+  <rect x="21" y="17" width="1.8" height="5" rx="0.5" fill="white" opacity="0.55"/>
 </svg>
