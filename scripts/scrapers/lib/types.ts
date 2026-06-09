@@ -4,6 +4,7 @@ export interface ScrapedCommand {
   command_type: "option" | "slash" | "subcommand" | "flag" | "config";
   category: string;
   description: string;
+  description_zh?: string | null;
   syntax: string | null;
   value_hint: string | null;
   parameters: ScrapedParameter[] | null;

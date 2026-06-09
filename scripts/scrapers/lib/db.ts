@@ -122,6 +122,10 @@ export async function updateCommand(
     sets.push("description = ?");
     values.push(data.description);
   }
+  if (data.description_zh) {
+    sets.push("description_zh = ?");
+    values.push(data.description_zh);
+  }
   if (data.syntax) {
     sets.push("syntax = ?");
     values.push(data.syntax);
@@ -165,8 +169,8 @@ export async function insertCommand(
   cmd: ScrapedCommand
 ): Promise<void> {
   await getPool().query(
-    `INSERT INTO commands (tool_id, slug, name, command_type, category, risk_level, source, description, syntax, value_hint, parameters, examples, notes, caveats, source_url, source_note, last_checked)
-     VALUES (?, ?, ?, ?, ?, ?, 'official', ?, ?, ?, ?, ?, ?, ?, ?, 'Scraped from official documentation.', CURDATE())`,
+    `INSERT INTO commands (tool_id, slug, name, command_type, category, risk_level, source, description, description_zh, syntax, value_hint, parameters, examples, notes, caveats, source_url, source_note, last_checked)
+     VALUES (?, ?, ?, ?, ?, ?, 'official', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Scraped from official documentation.', CURDATE())`,
     [
       toolId,
       cmd.slug,
@@ -175,6 +179,7 @@ export async function insertCommand(
       cmd.category,
       cmd.risk_level || "low",
       cmd.description,
+      cmd.description_zh ?? null,
       cmd.syntax,
       cmd.value_hint,
       cmd.parameters ? JSON.stringify(cmd.parameters) : null,

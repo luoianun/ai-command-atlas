@@ -8,30 +8,14 @@ const config: ScraperConfig = {
   toolSlug: "opencode",
   toolName: "OpenCode",
   sources: [
-    {
-      url: "https://opencode.ai/docs/cli/",
-      type: "html",
-      label: "CLI usage",
-    },
-    {
-      url: "https://opencode.ai/docs/tui/",
-      type: "html",
-      label: "TUI commands",
-    },
-    {
-      url: "https://opencode.ai/docs/commands/",
-      type: "html",
-      label: "Commands",
-    },
-    {
-      url: "https://opencode.ai/docs/config/",
-      type: "html",
-      label: "Configuration",
-    },
+    { url: "https://opencode.ai/docs/cli/", type: "html", label: "CLI (en)" },
+    { url: "https://opencode.ai/docs/zh-cn/cli/", type: "html", label: "CLI (zh)" },
+    { url: "https://opencode.ai/docs/tui/", type: "html", label: "TUI (en)" },
+    { url: "https://opencode.ai/docs/zh-cn/tui/", type: "html", label: "TUI (zh)" },
   ],
   slugify: (name: string) =>
     name
-      .replace(/^[-\/]+/, "")
+      .replace(/^[-/]+/, "")
       .replace(/\s+.*$/, "")
       .replace(/\s+/g, "-")
       .toLowerCase(),
@@ -39,152 +23,291 @@ const config: ScraperConfig = {
 
 export { config };
 
-export async function scrape(): Promise<ScrapedCommand[]> {
-  const commands: ScrapedCommand[] = [];
-  const existingSlugs = new Set<string>();
+interface ParsedEntry {
+  slug: string;
+  name: string;
+  description: string;
+  command_type: "option" | "flag" | "slash" | "subcommand";
+  category: string;
+  syntax: string;
+  value_hint: string | null;
+  source_url: string;
+}
 
-  for (const source of config.sources) {
-    try {
-      log.info(`Fetching ${source.url}`);
-      const html = await fetchHtml(source.url);
-      const $ = parseHtml(html);
+function slugify(name: string): string {
+  return name
+    .replace(/^[-/]+/, "")
+    .replace(/\s+.*$/, "")
+    .replace(/\s+/g, "-")
+    .toLowerCase();
+}
 
-      let currentCategory = source.label === "Configuration" ? "Config" : "Session";
-      let inCommandsSection = false;
+function parseCliPage(html: string, url: string): Map<string, ParsedEntry> {
+  const $ = parseHtml(html);
+  const entries = new Map<string, ParsedEntry>();
+  let currentCategory = "General";
 
-      $("main h2, main h3, main h4").each((_, el) => {
-        const $el = $(el);
-        const tag = el.tagName?.toLowerCase() ?? (el as any).name?.toLowerCase();
-        const text = $el.text().replace(/\s+/g, " ").trim();
+  $("main h2, main h3, main h4").each((_, el) => {
+    const $el = $(el);
+    const tag = (el as any).tagName?.toLowerCase() ?? (el as any).name?.toLowerCase();
+    const rawText = $el.text().replace(/\s+/g, " ").trim();
 
-        if (tag === "h2") {
-          if (text.toLowerCase().includes("model")) currentCategory = "Model";
-          else if (text.toLowerCase().includes("mcp")) currentCategory = "MCP";
-          else if (text.toLowerCase().includes("config")) currentCategory = "Config";
-          else if (text.toLowerCase().includes("provider")) currentCategory = "Model";
-          inCommandsSection = text.toLowerCase() === "commands";
-          return;
-        }
+    // h2 = section headers like "命令" / "Commands"
+    if (tag === "h2") {
+      const lower = rawText.toLowerCase();
+      if (lower.includes("command") || lower === "命令") currentCategory = "Subcommand";
+      else if (lower.includes("config") || lower.includes("配置")) currentCategory = "Config";
+      else if (lower.includes("mcp")) currentCategory = "MCP";
+      return;
+    }
 
-        const codeEl = $el.find("code");
-        const rawName = codeEl.length ? codeEl.first().text().trim() : text;
+    // h3 = subcommand names (e.g. agent, auth, mcp, models, run, serve, session, tui)
+    if (tag === "h3") {
+      const name = rawText;
+      // skip TOC / non-command headings
+      if (!name || name.includes("本页") || name.includes("this page") || name.length > 40) return;
 
-        // TUI page: bare h3 headings under "Commands" section (e.g. "connect", "compact")
-        if (source.label === "TUI commands" && inCommandsSection && tag === "h3") {
-          const cmdName = text.toLowerCase().trim();
-          if (!cmdName || cmdName === "options" || cmdName === "attention") return;
+      // Collect description from following <p> elements until next heading
+      const descParts: string[] = [];
+      let sib = $el.next();
+      while (sib.length && !sib.is("h2,h3,h4")) {
+        if (sib.is("p")) descParts.push(sib.text().replace(/\s+/g, " ").trim());
+        sib = sib.next();
+      }
+      const description = descParts.join(" ").trim();
+      if (!description) return;
 
-          const slug = cmdName;
-          if (existingSlugs.has(slug)) return;
+      const slug = slugify(name);
+      if (!entries.has(slug)) {
+        entries.set(slug, {
+          slug,
+          name,
+          description,
+          command_type: "subcommand",
+          category: currentCategory === "Subcommand" ? "Subcommand" : "Session",
+          syntax: `opencode ${name}`,
+          value_hint: null,
+          source_url: url,
+        });
+      }
+      return;
+    }
 
-          const descParts: string[] = [];
-          let sibling = $el.next();
-          while (sibling.length && !sibling.is("h2, h3")) {
-            if (sibling.is("p")) {
-              descParts.push(sibling.text().replace(/\s+/g, " ").trim());
-            }
-            sibling = sibling.next();
-          }
+    // h4 = sub-subcommands (e.g. agent create, mcp add) or flag sections
+    if (tag === "h4") {
+      const lower = rawText.toLowerCase();
+      // skip "标志" / "flags" / "options" heading sections
+      if (lower === "标志" || lower === "flags" || lower === "options" || lower === "attention") return;
 
-          const description = descParts.join(" ").trim();
-          if (!description) return;
+      // Check if it's a flag (starts with --)
+      const codeEl = $el.find("code");
+      const flagText = codeEl.length ? codeEl.first().text().trim() : rawText;
 
-          commands.push({
-            name: `/${cmdName}`,
-            slug,
-            command_type: "slash",
-            category: "Session",
-            description,
-            syntax: `/${cmdName}`,
-            value_hint: null,
-            parameters: null,
-            examples: null,
-            notes: null,
-            caveats: null,
-            source_url: source.url,
-            risk_level: "low",
-          });
-          existingSlugs.add(slug);
-          return;
-        }
-
-        if (!rawName.startsWith("--") && !rawName.startsWith("/")) return;
-
-        const parts = rawName.split(/\s+/);
+      if (flagText.startsWith("--")) {
+        const parts = flagText.split(/\s+/);
         const flagName = parts[0];
-        const slug = config.slugify(flagName);
-        if (existingSlugs.has(slug)) return;
+        const slug = slugify(flagName);
+        if (entries.has(slug)) return;
 
         const valueHint = parts.length > 1 ? parts.slice(1).join(" ") : null;
-
         const descParts: string[] = [];
-        let sibling = $el.next();
-        while (sibling.length && !sibling.is("h2, h3, h4")) {
-          const t = sibling.text().trim();
-          if (t && !t.startsWith("```")) descParts.push(t);
-          sibling = sibling.next();
+        let sib = $el.next();
+        while (sib.length && !sib.is("h2,h3,h4")) {
+          if (sib.is("p")) descParts.push(sib.text().replace(/\s+/g, " ").trim());
+          sib = sib.next();
         }
-
         const description = descParts.join(" ").trim();
         if (!description) return;
 
-        const isSlash = flagName.startsWith("/");
-
-        commands.push({
+        entries.set(slug, {
+          slug,
           name: flagName,
-          slug,
-          command_type: isSlash ? "slash" : valueHint ? "option" : "flag",
-          category: isSlash ? "Session" : currentCategory,
           description,
-          syntax: isSlash ? flagName : `opencode ${rawName}`,
+          command_type: valueHint ? "option" : "flag",
+          category: currentCategory,
+          syntax: `opencode ${flagText}`,
           value_hint: valueHint,
-          parameters: null,
-          examples: null,
-          notes: null,
-          caveats: null,
-          source_url: source.url,
-          risk_level: "low",
+          source_url: url,
         });
-        existingSlugs.add(slug);
+        return;
+      }
+
+      // Sub-subcommand (e.g. "create", "list", "login" under a parent h3)
+      const slug = rawText.toLowerCase().trim();
+      if (!slug || slug.length > 30) return;
+
+      const descParts: string[] = [];
+      let sib = $el.next();
+      while (sib.length && !sib.is("h2,h3,h4")) {
+        if (sib.is("p")) descParts.push(sib.text().replace(/\s+/g, " ").trim());
+        sib = sib.next();
+      }
+      const description = descParts.join(" ").trim();
+      if (!description || entries.has(slug)) return;
+
+      entries.set(slug, {
+        slug,
+        name: rawText,
+        description,
+        command_type: "subcommand",
+        category: currentCategory === "Subcommand" ? "Subcommand" : "Session",
+        syntax: `opencode ${rawText}`,
+        value_hint: null,
+        source_url: url,
       });
-
-      // Check tables
-      $("main table tbody tr").each((_, row) => {
-        const cells = $(row).find("td");
-        if (cells.length < 2) return;
-        const name = $(cells[0]).text().trim();
-        const desc = $(cells[1]).text().trim();
-        if (!name.startsWith("/") && !name.startsWith("--")) return;
-
-        const slug = config.slugify(name);
-        if (existingSlugs.has(slug)) return;
-
-        const isSlash = name.startsWith("/");
-
-        commands.push({
-          name,
-          slug,
-          command_type: isSlash ? "slash" : "option",
-          category: isSlash ? "Session" : currentCategory,
-          description: desc,
-          syntax: name,
-          value_hint: null,
-          parameters: null,
-          examples: null,
-          notes: null,
-          caveats: null,
-          source_url: source.url,
-          risk_level: "low",
-        });
-        existingSlugs.add(slug);
-      });
-
-      log.success(
-        `${source.label}: ${commands.length} commands total so far`
-      );
-    } catch (err: any) {
-      log.error(`${source.label} failed: ${err.message}`);
     }
+  });
+
+  return entries;
+}
+
+function parseTuiPage(html: string, url: string): Map<string, ParsedEntry> {
+  const $ = parseHtml(html);
+  const entries = new Map<string, ParsedEntry>();
+  let inCommands = false;
+
+  $("main h2, main h3").each((_, el) => {
+    const $el = $(el);
+    const tag = (el as any).tagName?.toLowerCase() ?? (el as any).name?.toLowerCase();
+    const text = $el.text().replace(/\s+/g, " ").trim();
+
+    if (tag === "h2") {
+      const lower = text.toLowerCase();
+      inCommands = lower === "commands" || lower === "命令";
+      return;
+    }
+
+    if (tag === "h3" && inCommands) {
+      const cmdName = text.toLowerCase().trim();
+      if (!cmdName || cmdName === "options" || cmdName === "attention" || cmdName.length > 30) return;
+
+      const slug = `tui-${cmdName}`;
+      if (entries.has(slug)) return;
+
+      const descParts: string[] = [];
+      let sib = $el.next();
+      while (sib.length && !sib.is("h2,h3")) {
+        if (sib.is("p")) descParts.push(sib.text().replace(/\s+/g, " ").trim());
+        sib = sib.next();
+      }
+      const description = descParts.join(" ").trim();
+      if (!description) return;
+
+      entries.set(slug, {
+        slug,
+        name: `/${cmdName}`,
+        description,
+        command_type: "slash",
+        category: "Session",
+        syntax: `/${cmdName}`,
+        value_hint: null,
+        source_url: url,
+      });
+    }
+  });
+
+  return entries;
+}
+
+export async function scrape(): Promise<ScrapedCommand[]> {
+  // Fetch all four pages in parallel
+  const [cliEnHtml, cliZhHtml, tuiEnHtml, tuiZhHtml] = await Promise.all([
+    fetchHtml("https://opencode.ai/docs/cli/").then(h => { log.success("CLI (en) fetched"); return h; }),
+    fetchHtml("https://opencode.ai/docs/zh-cn/cli/").then(h => { log.success("CLI (zh) fetched"); return h; }),
+    fetchHtml("https://opencode.ai/docs/tui/").then(h => { log.success("TUI (en) fetched"); return h; }),
+    fetchHtml("https://opencode.ai/docs/zh-cn/tui/").then(h => { log.success("TUI (zh) fetched"); return h; }),
+  ]);
+
+  const cliEn = parseCliPage(cliEnHtml, "https://opencode.ai/docs/cli/");
+  const cliZh = parseCliPage(cliZhHtml, "https://opencode.ai/docs/zh-cn/cli/");
+  const tuiEn = parseTuiPage(tuiEnHtml, "https://opencode.ai/docs/tui/");
+  const tuiZh = parseTuiPage(tuiZhHtml, "https://opencode.ai/docs/zh-cn/tui/");
+
+  log.info(`CLI en: ${cliEn.size}, CLI zh: ${cliZh.size}, TUI en: ${tuiEn.size}, TUI zh: ${tuiZh.size}`);
+
+  const commands: ScrapedCommand[] = [];
+
+  // Merge CLI entries: en as base, zh fills description_zh
+  for (const [slug, entry] of cliEn) {
+    const zhEntry = cliZh.get(slug);
+    commands.push({
+      name: entry.name,
+      slug: entry.slug,
+      command_type: entry.command_type,
+      category: entry.category,
+      description: entry.description,
+      description_zh: zhEntry?.description ?? null,
+      syntax: entry.syntax,
+      value_hint: entry.value_hint,
+      parameters: null,
+      examples: null,
+      notes: null,
+      caveats: null,
+      source_url: entry.source_url,
+      risk_level: "low",
+    });
+  }
+
+  // Add zh-only entries not found in en
+  for (const [slug, zhEntry] of cliZh) {
+    if (cliEn.has(slug)) continue;
+    commands.push({
+      name: zhEntry.name,
+      slug: zhEntry.slug,
+      command_type: zhEntry.command_type,
+      category: zhEntry.category,
+      description: zhEntry.description,
+      description_zh: zhEntry.description,
+      syntax: zhEntry.syntax,
+      value_hint: zhEntry.value_hint,
+      parameters: null,
+      examples: null,
+      notes: null,
+      caveats: null,
+      source_url: "https://opencode.ai/docs/cli/",
+      risk_level: "low",
+    });
+  }
+
+  // Merge TUI entries
+  for (const [slug, entry] of tuiEn) {
+    const zhEntry = tuiZh.get(slug);
+    commands.push({
+      name: entry.name,
+      slug: entry.slug,
+      command_type: entry.command_type,
+      category: entry.category,
+      description: entry.description,
+      description_zh: zhEntry?.description ?? null,
+      syntax: entry.syntax,
+      value_hint: entry.value_hint,
+      parameters: null,
+      examples: null,
+      notes: null,
+      caveats: null,
+      source_url: entry.source_url,
+      risk_level: "low",
+    });
+  }
+
+  for (const [slug, zhEntry] of tuiZh) {
+    if (tuiEn.has(slug)) continue;
+    commands.push({
+      name: zhEntry.name,
+      slug: zhEntry.slug,
+      command_type: zhEntry.command_type,
+      category: zhEntry.category,
+      description: zhEntry.description,
+      description_zh: zhEntry.description,
+      syntax: zhEntry.syntax,
+      value_hint: zhEntry.value_hint,
+      parameters: null,
+      examples: null,
+      notes: null,
+      caveats: null,
+      source_url: "https://opencode.ai/docs/tui/",
+      risk_level: "low",
+    });
   }
 
   log.success(`Total: ${commands.length} commands`);
