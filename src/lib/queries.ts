@@ -78,17 +78,23 @@ export async function searchCommands(q: string, toolSlug?: string): Promise<Sear
 }
 
 export async function suggestCommands(q: string, toolSlug?: string): Promise<{ name: string; tool_name: string; tool_slug: string; slug: string }[]> {
-  const prefix = `${q}%`;
   const like = `%${q}%`;
-  const params: any[] = [prefix, like];
+  const prefix = `${q}%`;
+  const params: any[] = [like];
+  // Strip leading -/slash chars then compare for ranking
   let sql = `SELECT c.slug, c.name, t.slug as tool_slug, t.name as tool_name
              FROM commands c JOIN tools t ON t.id = c.tool_id
-             WHERE (c.name LIKE ? OR c.name LIKE ?)`;
+             WHERE c.name LIKE ?`;
   if (toolSlug && toolSlug !== "all") {
     sql += ` AND t.slug = ?`;
     params.push(toolSlug);
   }
-  sql += ` ORDER BY CASE WHEN c.name LIKE ? THEN 0 ELSE 1 END, c.name LIMIT 8`;
+  // Rank: stripped name starts with q (0) > name contains q (1); then by stripped name length
+  sql += ` ORDER BY
+    CASE WHEN REGEXP_REPLACE(c.name, '^[-/]+', '') LIKE ? THEN 0 ELSE 1 END,
+    CHAR_LENGTH(REGEXP_REPLACE(c.name, '^[-/]+', '')),
+    c.name
+    LIMIT 8`;
   params.push(prefix);
   const [rows] = await pool.query<any[]>(sql, params);
   return rows;
@@ -147,7 +153,13 @@ export async function getAllCommands(filters?: {
   let sql = `SELECT c.*, t.slug as tool_slug, t.name as tool_name, t.color as tool_color
      FROM commands c JOIN tools t ON t.id = c.tool_id`;
   if (conditions.length > 0) sql += " WHERE " + conditions.join(" AND ");
-  sql += " ORDER BY c.category, c.name";
+  if (filters?.q) {
+    const qPrefix = `${filters.q}%`;
+    sql += ` ORDER BY CASE WHEN REGEXP_REPLACE(c.name, '^[-/]+', '') LIKE ? THEN 0 ELSE 1 END, CHAR_LENGTH(REGEXP_REPLACE(c.name, '^[-/]+', '')), c.name`;
+    params.push(qPrefix);
+  } else {
+    sql += " ORDER BY c.category, c.name";
+  }
   const [rows] = await pool.query<any[]>(sql, params);
   return rows.map(parseCommandJson);
 }
