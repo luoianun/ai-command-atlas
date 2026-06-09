@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Command, CommandType, Tool } from "@/types";
 import { RiskBadge, SourceBadge, TypeBadge, CatBadge } from "@/components/badge";
@@ -26,6 +26,8 @@ export function CommandsClient({
   const [cat, setCat] = useState(initialFilters.category);
   const [risk, setRisk] = useState(initialFilters.risk);
   const [toolFilter, setToolFilter] = useState(initialFilters.tool);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 50;
   const router = useRouter();
   const t = useT();
   const { lang } = useLang();
@@ -51,6 +53,12 @@ export function CommandsClient({
       c.description.toLowerCase().includes(query.toLowerCase());
     return tabMatch && catMatch && riskMatch && toolMatch && qMatch;
   }), [initialCommands, tab, cat, risk, toolFilter, query]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [tab, cat, risk, toolFilter, query]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <>
@@ -104,7 +112,7 @@ export function CommandsClient({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto mb-12">
+      <div className="overflow-x-auto">
         <table className="w-full border-collapse border border-[var(--border)] rounded-[var(--r)] overflow-hidden text-[13px]">
           <thead>
             <tr>
@@ -117,18 +125,18 @@ export function CommandsClient({
             </tr>
           </thead>
           <tbody>
-            {filtered.map((cmd, idx) => (
+            {paginated.map((cmd, idx) => (
               <tr key={cmd.id} onClick={() => router.push(`/commands/${cmd.tool_slug}/${cmd.slug}`)}
                 className="cursor-pointer hover:bg-[var(--surface)] transition-colors">
-                <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>
+                <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>
                   <div className="font-mono text-[12px] font-semibold text-[var(--accent)]">{cmd.name}</div>
                   <div className="text-[11px] text-[var(--muted)] mt-[1px]">{cmd.tool_name}</div>
                 </td>
-                <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><TypeBadge type={cmd.command_type} /></td>
-                <td className={`px-[14px] py-[10px] text-[var(--fg)] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>{desc(cmd)}</td>
-                <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><CatBadge label={t.commands.categories[cmd.category as keyof typeof t.commands.categories] ?? cmd.category} /></td>
-                <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><RiskBadge level={cmd.risk_level} /></td>
-                <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><SourceBadge source={cmd.source} /></td>
+                <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><TypeBadge type={cmd.command_type} /></td>
+                <td className={`px-[14px] py-[10px] text-[var(--fg)] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>{desc(cmd)}</td>
+                <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><CatBadge label={t.commands.categories[cmd.category as keyof typeof t.commands.categories] ?? cmd.category} /></td>
+                <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><RiskBadge level={cmd.risk_level} /></td>
+                <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><SourceBadge source={cmd.source} /></td>
               </tr>
             ))}
             {filtered.length === 0 && (
@@ -142,6 +150,56 @@ export function CommandsClient({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between py-4 mb-8">
+          <span className="text-[12px] text-[var(--muted)]">
+            第 {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} 条，共 {filtered.length} 条
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage(1)} disabled={page === 1}
+              className="h-7 px-2 text-[12px] border border-[var(--border)] rounded-[var(--r)] text-[var(--muted)] bg-[var(--bg)] hover:bg-[var(--surface)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              «
+            </button>
+            <button
+              onClick={() => setPage(p => p - 1)} disabled={page === 1}
+              className="h-7 px-2 text-[12px] border border-[var(--border)] rounded-[var(--r)] text-[var(--muted)] bg-[var(--bg)] hover:bg-[var(--surface)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              ‹
+            </button>
+            {/* Page number buttons — show at most 7 */}
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+              .reduce<(number | "...")[]>((acc, p, i, arr) => {
+                if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, i) =>
+                p === "..." ? (
+                  <span key={`ellipsis-${i}`} className="h-7 px-2 text-[12px] text-[var(--muted)] flex items-center">…</span>
+                ) : (
+                  <button key={p}
+                    onClick={() => setPage(p as number)}
+                    className={`h-7 min-w-[28px] px-2 text-[12px] border rounded-[var(--r)] transition-colors ${page === p ? "bg-[var(--fg)] border-[var(--fg)] text-[var(--bg)] font-semibold" : "border-[var(--border)] text-[var(--muted)] bg-[var(--bg)] hover:bg-[var(--surface)]"}`}>
+                    {p}
+                  </button>
+                )
+              )}
+            <button
+              onClick={() => setPage(p => p + 1)} disabled={page === totalPages}
+              className="h-7 px-2 text-[12px] border border-[var(--border)] rounded-[var(--r)] text-[var(--muted)] bg-[var(--bg)] hover:bg-[var(--surface)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              ›
+            </button>
+            <button
+              onClick={() => setPage(totalPages)} disabled={page === totalPages}
+              className="h-7 px-2 text-[12px] border border-[var(--border)] rounded-[var(--r)] text-[var(--muted)] bg-[var(--bg)] hover:bg-[var(--surface)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              »
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
