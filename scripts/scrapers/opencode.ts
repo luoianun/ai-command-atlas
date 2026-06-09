@@ -46,7 +46,7 @@ function parseCliPage(html: string, url: string): Map<string, ParsedEntry> {
 
   const isZh = url.includes("/zh-cn/");
 
-  $("main > *").each((_, el) => {
+  $("main").find("h2, h3, h4, table").each((_, el) => {
     const $el = $(el);
     const tag = (el as any).tagName?.toLowerCase() ?? (el as any).name?.toLowerCase();
 
@@ -67,12 +67,23 @@ function parseCliPage(html: string, url: string): Map<string, ParsedEntry> {
 
       currentH3 = text.toLowerCase();
 
-      // Collect description from following <p> until next heading/table
+      // Collect description: grab text from next few p siblings via parent traversal
       const descParts: string[] = [];
-      let sib = $el.next();
-      while (sib.length && !sib.is("h2,h3,h4,table")) {
-        if (sib.is("p")) descParts.push(sib.text().replace(/\s+/g, " ").trim());
-        sib = sib.next();
+      // Use nextUntil to grab p elements until next heading
+      $el.nextUntil("h2, h3, h4").filter("p").each((_, p) => {
+        const t = $(p).text().replace(/\s+/g, " ").trim();
+        if (t) descParts.push(t);
+      });
+      // If nextUntil didn't work (different parent), try parent's next siblings
+      if (descParts.length === 0) {
+        let sib = $el.parent().next();
+        let checked = 0;
+        while (sib.length && checked < 3) {
+          if (sib.is("p")) descParts.push(sib.text().replace(/\s+/g, " ").trim());
+          else if (sib.is("h2,h3,h4,table")) break;
+          sib = sib.next();
+          checked++;
+        }
       }
       const description = descParts.join(" ").trim();
       if (!description) return;
