@@ -44,15 +44,39 @@ export function CommandsClient({
     return counts;
   }, [initialCommands]);
 
-  const filtered = useMemo(() => initialCommands.filter(c => {
-    const tabMatch = tab === "all" || c.command_type === tab;
-    const catMatch = !cat || c.category === cat;
-    const riskMatch = !risk || c.risk_level === risk;
-    const toolMatch = !toolFilter || toolFilter === "all" || c.tool_slug === toolFilter;
-    const qMatch = !query || c.name.toLowerCase().includes(query.toLowerCase()) ||
-      c.description.toLowerCase().includes(query.toLowerCase());
-    return tabMatch && catMatch && riskMatch && toolMatch && qMatch;
-  }), [initialCommands, tab, cat, risk, toolFilter, query]);
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase();
+    const strip = (s: string) => s.replace(/^[-/]+/, "");
+
+    const score = (c: Command): number => {
+      if (!q) return 0;
+      const name = c.name.toLowerCase();
+      const stripped = strip(name);
+      if (stripped === q || name === q) return 4;           // exact match
+      if (stripped.startsWith(q)) return 3;                 // stripped prefix
+      if (name.startsWith(q)) return 3;
+      if (name.includes(q)) return 2;                       // name contains
+      return 1;                                             // description contains
+    };
+
+    return initialCommands
+      .filter(c => {
+        const tabMatch = tab === "all" || c.command_type === tab;
+        const catMatch = !cat || c.category === cat;
+        const riskMatch = !risk || c.risk_level === risk;
+        const toolMatch = !toolFilter || toolFilter === "all" || c.tool_slug === toolFilter;
+        const qMatch = !query || c.name.toLowerCase().includes(q) ||
+          c.description.toLowerCase().includes(q) ||
+          (c.description_zh ?? "").toLowerCase().includes(q);
+        return tabMatch && catMatch && riskMatch && toolMatch && qMatch;
+      })
+      .sort((a, b) => {
+        if (!q) return 0;
+        const diff = score(b) - score(a);
+        if (diff !== 0) return diff;
+        return strip(a.name).localeCompare(strip(b.name));
+      });
+  }, [initialCommands, tab, cat, risk, toolFilter, query]);
 
   // Reset to page 1 when filters change
   useEffect(() => { setPage(1); }, [tab, cat, risk, toolFilter, query]);
