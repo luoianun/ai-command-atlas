@@ -20,16 +20,16 @@ export function Nav() {
     <nav className="nav-bg sticky top-0 z-50 h-12 px-6 border-b border-[var(--border)] backdrop-blur-sm flex items-center justify-between">
       <div className="flex items-center gap-[6px]">
         <Link href="/" className="flex items-center gap-[7px] no-underline group">
-          {/* Terminal prompt icon */}
-          <div className="flex items-center justify-center w-[26px] h-[26px] rounded-[5px] bg-[var(--fg)] flex-shrink-0 group-hover:opacity-90 transition-opacity">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M2 4l4 3-4 3" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          {/* Terminal prompt icon — fixed dark bg so it looks the same in both themes */}
+          <div className="flex items-center justify-center w-[28px] h-[28px] rounded-[6px] bg-[#09090b] dark:border dark:border-[#333] flex-shrink-0 group-hover:opacity-85 transition-opacity">
+            <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
+              <path d="M2 4l4 3-4 3" stroke="#60a5fa" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M8 10h4" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
             </svg>
           </div>
           {/* Wordmark */}
-          <span className="font-mono text-[13px] font-semibold tracking-[-0.03em] text-[var(--fg)] leading-none">
-            ai<span className="text-[var(--muted)] font-normal">-</span>command<span className="text-[var(--muted)] font-normal">·</span><span className="text-[var(--accent)]">atlas</span>
+          <span className="font-mono text-[14px] font-semibold tracking-[-0.03em] text-[var(--fg)] leading-none">
+            ai<span className="text-[var(--muted)] font-normal">-</span>command<span className="text-[var(--muted)] font-normal opacity-60">·</span><span className="text-[var(--accent)]">atlas</span>
           </span>
         </Link>
         <div className="w-px h-5 bg-[var(--border)] mx-[6px]" />

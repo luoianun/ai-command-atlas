@@ -21,7 +21,7 @@ export function ToolChips({ onChange }: { onChange?: (key: string) => void }) {
         <button key={t.key} onClick={() => select(t.key)}
           className={`inline-flex items-center gap-[5px] px-3 py-1 border rounded-full text-[12px] font-medium cursor-pointer transition-all select-none
             ${active === t.key
-              ? "bg-[var(--fg)] border-[var(--fg)] text-white"
+              ? "bg-[var(--fg)] border-[var(--fg)] text-[var(--bg)]"
               : "border-[var(--border)] text-[var(--muted)] bg-[var(--bg)] hover:border-[#a1a1aa] hover:text-[var(--fg)]"}`}>
           {t.dotColor && <span className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: t.dotColor }} />}
           {t.label}

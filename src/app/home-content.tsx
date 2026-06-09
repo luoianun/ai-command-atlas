@@ -24,10 +24,10 @@ export function HomeContent({
     <div className="max-w-[1120px] mx-auto px-6">
       {/* Hero */}
       <div className="pt-[52px] pb-9 text-center border-b border-[var(--border-light)]">
-        <div className="inline-flex items-center gap-[6px] font-mono text-[11px] font-medium tracking-[.04em] border border-[var(--border)] rounded-[6px] px-[10px] py-[5px] mb-4 bg-[var(--surface)]">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="flex-shrink-0">
-            <path d="M1.5 3.5l3.5 2.5-3.5 2.5" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M7 8.5h3.5" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round"/>
+        <div className="inline-flex items-center gap-[8px] font-mono text-[13px] font-medium tracking-[.02em] border border-[var(--border)] rounded-[8px] px-[14px] py-[7px] mb-5 bg-[var(--surface)]">
+          <svg width="14" height="14" viewBox="0 0 12 12" fill="none" className="flex-shrink-0">
+            <path d="M1.5 3.5l3.5 2.5-3.5 2.5" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M7 8.5h3.5" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
           <span className="text-[var(--fg)]">ai-command</span>
           <span className="text-[var(--border)]">·</span>

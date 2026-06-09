@@ -8,6 +8,9 @@ import { LanguageProvider } from "@/components/language-provider";
 export const metadata: Metadata = {
   title: "ai-command-atlas — AI CLI Command Reference",
   description: "Search AI CLI commands, slash commands, options, and examples for Claude Code, Codex CLI, Gemini CLI, Aider, and OpenCode.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
