@@ -1,11 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" fill="#0a0a0a"/>
-  <!-- Green outer rectangle (no rounded corners), offset left-heavy -->
-  <rect x="3" y="9" width="24" height="15" fill="#2EE65A"/>
-  <!-- Black inner rectangle, shifts right leaving thick green left border -->
-  <rect x="8" y="11" width="18" height="11" fill="#0a0a0a"/>
-  <!-- Left diamond -->
-  <rect x="11.5" y="14" width="4" height="4" fill="#2EE65A" transform="rotate(45 13.5 16)"/>
-  <!-- Right diamond -->
-  <rect x="18.5" y="14" width="4" height="4" fill="#2EE65A" transform="rotate(45 20.5 16)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Black background, no rounded corners per brand image -->
+  <rect width="100" height="100" fill="#0a0a0a"/>
+
+  <!-- Green outer rectangle: left-heavy offset (left edge at x=10, right at x=82) -->
+  <!-- Top at y=28, bottom at y=72 — total height 44, width 72 -->
+  <rect x="10" y="28" width="72" height="44" fill="#3DF77A"/>
+
+  <!-- Black inner rectangle: inset more on left (x=24) than right (x=82-4=78) -->
+  <!-- top inset 5 → y=33, bottom inset 5 → y=67, height 34 -->
+  <rect x="24" y="33" width="54" height="34" fill="#0a0a0a"/>
+
+  <!-- Left diamond: centered at (38, 50), half-diagonal ~7 -->
+  <polygon points="38,43 45,50 38,57 31,50" fill="#3DF77A"/>
+
+  <!-- Right diamond: centered at (58, 50), same size -->
+  <polygon points="58,43 65,50 58,57 51,50" fill="#3DF77A"/>
 </svg>
