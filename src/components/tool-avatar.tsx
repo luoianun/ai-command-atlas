@@ -1,12 +1,12 @@
 "use client";
 import Image from "next/image";
 
-const LOGO_MAP: Record<string, { src: string; type: "svg" | "png" }> = {
+const LOGO_MAP: Record<string, { src: string; type: "svg" | "png"; inset?: number }> = {
   "claude-code": { src: "/logos/claude-code.svg",  type: "svg" },
   "codex-cli":   { src: "/logos/codex-cli.svg",    type: "svg" },
   "gemini-cli":  { src: "/logos/gemini-cli.svg",   type: "svg" },
-  "aider":       { src: "/logos/aider.svg",         type: "svg" },
-  "opencode":    { src: "/logos/opencode.png",      type: "png" },
+  "aider":       { src: "/logos/aider.svg",         type: "svg", inset: 6 },
+  "opencode":    { src: "/logos/opencode.svg",      type: "svg" },
   "goose":       { src: "/logos/goose.svg",         type: "svg" },
   "cline":       { src: "/logos/cline.svg",         type: "svg" },
   "kiro":        { src: "/logos/kiro.svg",          type: "svg" },
@@ -34,6 +34,8 @@ export function ToolAvatar({ slug, avatar, color, size = 40, className = "" }: T
   };
 
   if (logo) {
+    const imageSize = size - (logo.inset ?? 6);
+
     return (
       <div
         className={`rounded-[8px] border border-[var(--border)] bg-white flex items-center justify-center flex-shrink-0 overflow-hidden ${className}`}
@@ -42,8 +44,8 @@ export function ToolAvatar({ slug, avatar, color, size = 40, className = "" }: T
         <Image
           src={logo.src}
           alt={avatar}
-          width={size - 10}
-          height={size - 10}
+          width={imageSize}
+          height={imageSize}
           style={{ objectFit: "contain" }}
         />
       </div>

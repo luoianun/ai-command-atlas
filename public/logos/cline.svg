@@ -1,11 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#7C3AED"/>
-  <!-- Circuit C shape -->
-  <path d="M22 10 Q12 8 10 16 Q8 24 18 24 L22 24" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-  <!-- Circuit dots -->
-  <circle cx="22" cy="10" r="1.5" fill="white"/>
-  <circle cx="22" cy="24" r="1.5" fill="white"/>
-  <!-- Code brackets hint -->
-  <path d="M17 14 L15 16 L17 18" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M20 14 L22 16 L20 18" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cline" viewBox="0 0 32 32"><title>Cline</title><rect width="32" height="32" rx="7" fill="#323B43"/><g transform="translate(8.560 8.560) scale(0.62)" color="#FFFFFF" fill="currentColor"><path d="M17.035 3.991c2.75 0 4.98 2.24 4.98 5.003v1.667l1.45 2.896a1.01 1.01 0 01-.002.909l-1.448 2.864v1.668c0 2.762-2.23 5.002-4.98 5.002H7.074c-2.751 0-4.98-2.24-4.98-5.002V17.33l-1.48-2.855a1.01 1.01 0 01-.003-.927l1.482-2.887V8.994c0-2.763 2.23-5.003 4.98-5.003h9.962zM8.265 9.6a2.274 2.274 0 00-2.274 2.274v4.042a2.274 2.274 0 004.547 0v-4.042A2.274 2.274 0 008.265 9.6zm7.326 0a2.274 2.274 0 00-2.274 2.274v4.042a2.274 2.274 0 104.548 0v-4.042A2.274 2.274 0 0015.59 9.6z"></path><path d="M12.054 5.558a2.779 2.779 0 100-5.558 2.779 2.779 0 000 5.558z"></path></g></svg>
