@@ -1,22 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="7" fill="#0a0a0a"/>
   <defs>
-    <!-- Clip to icon boundary -->
-    <clipPath id="qshape">
-      <ellipse cx="16" cy="16" rx="11" ry="13"/>
+    <clipPath id="qblob">
+      <path d="M16,4 C24,4 28,9 28,16 C28,22 22,28 15,28 C10,28 6,24 5,21 C9,16 9,16 5,11 C6,7 11,4 16,4Z"/>
     </clipPath>
-    <!-- Green right half clip -->
-    <clipPath id="qgreen">
-      <rect x="15.5" y="0" width="16" height="32"/>
+    <clipPath id="qgrn">
+      <rect x="15.5" y="0" width="16.5" height="32"/>
     </clipPath>
   </defs>
-
-  <!-- Full shape in white -->
-  <ellipse cx="16" cy="16" rx="11" ry="13" fill="white"/>
-
-  <!-- Right portion overdrawn in green -->
-  <ellipse cx="16" cy="16" rx="11" ry="13" fill="#00C853" clip-path="url(#qgreen)"/>
-
-  <!-- Black counter circle — creates the "q" / "a" letterform -->
-  <circle cx="16.5" cy="13.5" r="7" fill="#0a0a0a" clip-path="url(#qshape)"/>
+  <path d="M16,4 C24,4 28,9 28,16 C28,22 22,28 15,28 C10,28 6,24 5,21 C9,16 9,16 5,11 C6,7 11,4 16,4Z" fill="white"/>
+  <path d="M16,4 C24,4 28,9 28,16 C28,22 22,28 15,28 C10,28 6,24 5,21 C9,16 9,16 5,11 C6,7 11,4 16,4Z" fill="#00C853" clip-path="url(#qgrn)"/>
+  <circle cx="17" cy="15" r="7" fill="#0a0a0a" clip-path="url(#qblob)"/>
 </svg>
