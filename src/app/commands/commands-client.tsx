@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Command, CommandType, Tool } from "@/types";
 import { RiskBadge, SourceBadge, TypeBadge, CatBadge } from "@/components/badge";
@@ -52,11 +52,11 @@ export function CommandsClient({
       if (!q) return 0;
       const name = c.name.toLowerCase();
       const stripped = strip(name);
-      if (stripped === q || name === q) return 4;           // exact match
-      if (stripped.startsWith(q)) return 3;                 // stripped prefix
+      if (stripped === q || name === q) return 4;
+      if (stripped.startsWith(q)) return 3;
       if (name.startsWith(q)) return 3;
-      if (name.includes(q)) return 2;                       // name contains
-      return 1;                                             // description contains
+      if (name.includes(q)) return 2;
+      return 1;
     };
 
     return initialCommands
@@ -78,8 +78,11 @@ export function CommandsClient({
       });
   }, [initialCommands, tab, cat, risk, toolFilter, query]);
 
-  // Reset to page 1 when filters change
-  useEffect(() => { setPage(1); }, [tab, cat, risk, toolFilter, query]);
+  const updateTab = (nextTab: Tab) => { setTab(nextTab); setPage(1); };
+  const updateQuery = (nextQuery: string) => { setQuery(nextQuery); setPage(1); };
+  const updateToolFilter = (nextTool: string) => { setToolFilter(nextTool); setPage(1); };
+  const updateCategory = (nextCategory: string) => { setCat(nextCategory); setPage(1); };
+  const updateRisk = (nextRisk: string) => { setRisk(nextRisk); setPage(1); };
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -91,10 +94,11 @@ export function CommandsClient({
         <h1 className="font-mono text-[24px] font-bold tracking-[-0.03em] text-[var(--fg)] mb-1">{t.commands.title}</h1>
         <p className="text-[14px] text-[var(--muted)]">{t.commands.commandsAcross(initialCommands.length, tools.length)}</p>
       </div>
+
       {/* Tabs */}
       <div className="flex gap-[2px] border-b border-[var(--border)] pt-4 overflow-x-auto">
         {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
+          <button key={t.key} onClick={() => updateTab(t.key)}
             className={`flex items-center gap-[6px] px-[14px] py-[7px] text-[13px] font-medium cursor-pointer border-b-2 mb-[-1px] transition-colors bg-transparent border-x-0 border-t-0 whitespace-nowrap
               ${tab === t.key
                 ? "text-[var(--fg)] border-b-[var(--fg)]"
@@ -108,91 +112,99 @@ export function CommandsClient({
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between py-4 gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative">
-            <svg className="absolute left-[9px] top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" width="13" height="13" viewBox="0 0 15 15" fill="none">
-              <path d="M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zm-.657 3.757 2.7 2.7-.707.707-2.7-2.7a4.5 4.5 0 11.707-.707z" fill="currentColor" fillRule="evenodd"/>
-            </svg>
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t.commands.filterPlaceholder}
-              className="h-[34px] pl-[32px] pr-[10px] w-[220px] border border-[var(--border)] rounded-[var(--r)] font-mono text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none focus:border-[var(--accent)] transition-colors placeholder:font-sans placeholder:text-[var(--muted)]" />
+      <div className="toolbar-card p-3 my-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative">
+              <svg aria-hidden="true" className="absolute left-[9px] top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" width="13" height="13" viewBox="0 0 15 15" fill="none">
+                <path d="M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zm-.657 3.757 2.7 2.7-.707.707-2.7-2.7a4.5 4.5 0 11.707-.707z" fill="currentColor" fillRule="evenodd"/>
+              </svg>
+              <input
+                value={query}
+                onChange={e => updateQuery(e.target.value)}
+                placeholder={t.commands.filterPlaceholder}
+                aria-label={t.commands.filterPlaceholder}
+                className="focus-ring h-[34px] pl-[32px] pr-[10px] w-[220px] border border-[var(--border)] rounded-[var(--r)] font-mono text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none transition-colors placeholder:font-sans placeholder:text-[var(--muted)]"
+              />
+            </div>
+            <select value={toolFilter} onChange={e => updateToolFilter(e.target.value)}
+              className="focus-ring h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
+              <option value="">{t.commands.allTools}</option>
+              {tools.map(t => <option key={t.slug} value={t.slug}>{t.name}</option>)}
+            </select>
+            <select value={cat} onChange={e => updateCategory(e.target.value)}
+              className="focus-ring h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
+              <option value="">{t.commands.allCategories}</option>
+              {categories.map(c => <option key={c} value={c}>{t.commands.categories[c as keyof typeof t.commands.categories] ?? c}</option>)}
+            </select>
+            <select value={risk} onChange={e => updateRisk(e.target.value)}
+              className="focus-ring h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
+              {RISKS.map(r => <option key={r} value={r}>{RISK_LABELS[r]}</option>)}
+            </select>
           </div>
-          <select value={toolFilter} onChange={e => setToolFilter(e.target.value)}
-            className="h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
-            <option value="">{t.commands.allTools}</option>
-            {tools.map(t => <option key={t.slug} value={t.slug}>{t.name}</option>)}
-          </select>
-          <select value={cat} onChange={e => setCat(e.target.value)}
-            className="h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
-            <option value="">{t.commands.allCategories}</option>
-            {categories.map(c => <option key={c} value={c}>{t.commands.categories[c as keyof typeof t.commands.categories] ?? c}</option>)}
-          </select>
-          <select value={risk} onChange={e => setRisk(e.target.value)}
-            className="h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
-            {RISKS.map(r => <option key={r} value={r}>{RISK_LABELS[r]}</option>)}
-          </select>
+          <span className="text-[12px] text-[var(--muted)]">{t.commands.commandCount(filtered.length)}</span>
         </div>
-        <span className="text-[12px] text-[var(--muted)]">{t.commands.commandCount(filtered.length)}</span>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse border border-[var(--border)] rounded-[var(--r)] overflow-hidden text-[13px]">
-          <thead>
-            <tr>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[200px] whitespace-nowrap">{t.commands.command}</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[90px]">{t.commands.type}</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)]">{t.commands.description}</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[110px]">{t.commands.category}</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[76px]">{t.commands.risk}</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[96px]">{t.commands.source}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginated.map((cmd, idx) => (
-              <tr key={cmd.id} onClick={() => router.push(`/commands/${cmd.tool_slug}/${cmd.slug}`)}
-                className="cursor-pointer hover:bg-[var(--surface)] transition-colors">
-                <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>
-                  <div className="font-mono text-[12px] font-semibold text-[var(--accent)]">{cmd.name}</div>
-                  <div className="text-[11px] text-[var(--muted)] mt-[1px]">{cmd.tool_name}</div>
-                </td>
-                <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><TypeBadge type={cmd.command_type} /></td>
-                <td className={`px-[14px] py-[10px] text-[var(--fg)] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>{desc(cmd)}</td>
-                <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><CatBadge label={t.commands.categories[cmd.category as keyof typeof t.commands.categories] ?? cmd.category} /></td>
-                <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><RiskBadge level={cmd.risk_level} /></td>
-                <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><SourceBadge source={cmd.source} /></td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
+      <div className="panel-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-[var(--muted)]">
-                  <strong className="text-[var(--fg)] block text-[14px] mb-[6px]">{t.commands.noCommandsFound}</strong>
-                  {t.commands.clearFilters}
-                </td>
+                <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[200px] whitespace-nowrap">{t.commands.command}</th>
+                <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[90px]">{t.commands.type}</th>
+                <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)]">{t.commands.description}</th>
+                <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[110px]">{t.commands.category}</th>
+                <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[76px]">{t.commands.risk}</th>
+                <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[96px]">{t.commands.source}</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {paginated.map((cmd, idx) => (
+                <tr key={cmd.id} onClick={() => router.push(`/commands/${cmd.tool_slug}/${cmd.slug}`)}
+                  className="interactive-row cursor-pointer">
+                  <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>
+                    <div className="font-mono text-[12px] font-semibold text-[var(--accent)]">{cmd.name}</div>
+                    <div className="text-[11px] text-[var(--muted)] mt-[1px]">{cmd.tool_name}</div>
+                  </td>
+                  <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><TypeBadge type={cmd.command_type} /></td>
+                  <td className={`px-[14px] py-[10px] text-[var(--fg)] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>{desc(cmd)}</td>
+                  <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><CatBadge label={t.commands.categories[cmd.category as keyof typeof t.commands.categories] ?? cmd.category} /></td>
+                  <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><RiskBadge level={cmd.risk_level} /></td>
+                  <td className={`px-[14px] py-[10px] ${idx < paginated.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><SourceBadge source={cmd.source} /></td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-[var(--muted)]">
+                    <strong className="text-[var(--fg)] block text-[14px] mb-[6px]">{t.commands.noCommandsFound}</strong>
+                    {t.commands.clearFilters}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between py-4 mb-8">
           <span className="text-[12px] text-[var(--muted)]">
-            第 {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} 条，共 {filtered.length} 条
+            {t.commands.showingRange((page - 1) * PAGE_SIZE + 1, Math.min(page * PAGE_SIZE, filtered.length), filtered.length)}
           </span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage(1)} disabled={page === 1}
               className="h-7 px-2 text-[12px] border border-[var(--border)] rounded-[var(--r)] text-[var(--muted)] bg-[var(--bg)] hover:bg-[var(--surface)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-              «
+              {"«"}
             </button>
             <button
               onClick={() => setPage(p => p - 1)} disabled={page === 1}
               className="h-7 px-2 text-[12px] border border-[var(--border)] rounded-[var(--r)] text-[var(--muted)] bg-[var(--bg)] hover:bg-[var(--surface)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-              ‹
+              {"‹"}
             </button>
-            {/* Page number buttons — show at most 7 */}
             {Array.from({ length: totalPages }, (_, i) => i + 1)
               .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
               .reduce<(number | "...")[]>((acc, p, i, arr) => {
@@ -202,7 +214,7 @@ export function CommandsClient({
               }, [])
               .map((p, i) =>
                 p === "..." ? (
-                  <span key={`ellipsis-${i}`} className="h-7 px-2 text-[12px] text-[var(--muted)] flex items-center">…</span>
+                  <span key={`ellipsis-${i}`} className="h-7 px-2 text-[12px] text-[var(--muted)] flex items-center">{"…"}</span>
                 ) : (
                   <button key={p}
                     onClick={() => setPage(p as number)}
@@ -214,12 +226,12 @@ export function CommandsClient({
             <button
               onClick={() => setPage(p => p + 1)} disabled={page === totalPages}
               className="h-7 px-2 text-[12px] border border-[var(--border)] rounded-[var(--r)] text-[var(--muted)] bg-[var(--bg)] hover:bg-[var(--surface)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-              ›
+              {"›"}
             </button>
             <button
               onClick={() => setPage(totalPages)} disabled={page === totalPages}
               className="h-7 px-2 text-[12px] border border-[var(--border)] rounded-[var(--r)] text-[var(--muted)] bg-[var(--bg)] hover:bg-[var(--surface)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-              »
+              {"»"}
             </button>
           </div>
         </div>
