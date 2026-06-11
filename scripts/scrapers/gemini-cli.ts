@@ -1,16 +1,15 @@
 import type { ScrapedCommand, ScraperConfig } from "./lib/types.js";
-import { fetchMarkdown } from "./lib/fetcher.js";
+import { fetchHtml, parseHtml, fetchMarkdown } from "./lib/fetcher.js";
 import { createLogger } from "./lib/logger.js";
 
 const log = createLogger("gemini-cli");
-
-const GITHUB_RAW = "https://raw.githubusercontent.com/google-gemini/gemini-cli/main/docs/cli";
 
 const config: ScraperConfig = {
   toolSlug: "gemini-cli",
   toolName: "Gemini CLI",
   sources: [
-    { url: `${GITHUB_RAW}/cli-reference.md`, type: "markdown", label: "CLI reference (GitHub)" },
+    { url: "https://geminicli.com/docs/reference/commands/", type: "html", label: "Commands reference" },
+    { url: "https://geminicli.com/docs/cli/cli-reference/", type: "html", label: "CLI flags reference" },
   ],
   slugify: (name: string) =>
     name.replace(/^[-\/`]+/, "").replace(/`/g, "").replace(/\s+.*$/, "").replace(/\s+/g, "-").toLowerCase(),
@@ -35,6 +34,100 @@ function inferRisk(name: string, desc: string): "low" | "medium" | "high" {
   return "low";
 }
 
+async function scrapeHtml(url: string, commands: ScrapedCommand[], seen: Set<string>): Promise<void> {
+  const html = await fetchHtml(url);
+  const $ = parseHtml(html);
+
+  let currentSection = "General";
+
+  // Parse tables first (Starlight CLI reference pages often use tables)
+  $("main table, article table").each((_, table) => {
+    const $table = $(table);
+    const headers = $table.find("thead th, tr:first-child th")
+      .map((__, th) => $(th).text().trim().toLowerCase().replace(/`/g, "")).get();
+
+    if (!headers.length) return;
+
+    const hasCommand = headers.some(h => h.includes("command") || h.includes("option") || h.includes("flag") || h.includes("name"));
+    if (!hasCommand) return;
+
+    const descIdx = headers.findIndex(h => h.includes("description") || h.includes("desc"));
+    const nameIdx = 0;
+
+    $table.find("tbody tr").each((__, row) => {
+      const cells = $(row).find("td");
+      if (cells.length < 2) return;
+
+      const rawName = $(cells[nameIdx]).text().replace(/\s+/g, " ").trim().replace(/`/g, "");
+      const desc = descIdx >= 0 ? $(cells[descIdx]).text().replace(/\s+/g, " ").trim() : "";
+      if (!rawName || rawName.length > 80) return;
+
+      const slug = config.slugify(rawName);
+      if (seen.has(slug)) return;
+      seen.add(slug);
+
+      const isSlash = rawName.startsWith("/");
+      const isFlag = rawName.startsWith("--") || rawName.startsWith("-");
+
+      commands.push({
+        name: rawName,
+        slug,
+        command_type: isSlash ? "slash" : isFlag ? "option" : "subcommand",
+        category: inferCategory(rawName, desc),
+        description: desc || `${rawName} command.`,
+        syntax: isFlag ? `gemini ${rawName}` : rawName,
+        source_url: url,
+        risk_level: inferRisk(rawName, desc),
+      });
+    });
+  });
+
+  // Parse headings (h2/h3/h4) for commands not in tables
+  $("main, article").find("h2, h3, h4").each((_, el) => {
+    const $el = $(el);
+    const tag = (el.tagName || (el as any).name || "").toLowerCase();
+    const text = $el.text().trim();
+
+    if (tag === "h2") {
+      currentSection = text;
+      return;
+    }
+
+    if (!text || text.length > 80) return;
+
+    const isSlash = text.startsWith("/");
+    const isFlag = text.startsWith("--") || text.startsWith("-");
+    const isCommand = /\b(mode|config|setting|mcp|model|session|sandbox|approval|yolo|help|clear|compress|resume|quit)\b/i.test(text);
+    if (!isSlash && !isFlag && !isCommand) return;
+
+    const descParts: string[] = [];
+    let sibling = $el.next();
+    while (sibling.length && !sibling.is("h1, h2, h3, h4")) {
+      if (sibling.is("p")) {
+        const t = sibling.text().replace(/\s+/g, " ").trim();
+        if (t) descParts.push(t);
+      }
+      sibling = sibling.next();
+    }
+    const description = descParts.join(" ").trim() || `${text} command.`;
+    const slug = config.slugify(text);
+
+    if (seen.has(slug)) return;
+    seen.add(slug);
+
+    commands.push({
+      name: text,
+      slug,
+      command_type: isSlash ? "slash" : isFlag ? "option" : "config",
+      category: inferCategory(currentSection + " " + text, description),
+      description,
+      syntax: isFlag ? `gemini ${text}` : text,
+      source_url: url,
+      risk_level: inferRisk(text, description),
+    });
+  });
+}
+
 function parseMarkdownTable(lines: string[], startIdx: number): { headers: string[]; rows: string[][] } {
   const headers = lines[startIdx]
     .split("|")
@@ -51,139 +144,99 @@ function parseMarkdownTable(lines: string[], startIdx: number): { headers: strin
   return { headers, rows };
 }
 
-export async function scrape(): Promise<ScrapedCommand[]> {
-  const commands: ScrapedCommand[] = [];
-  const seen = new Set<string>();
+async function scrapeGitHubMarkdown(commands: ScrapedCommand[], seen: Set<string>): Promise<void> {
+  const GITHUB_RAW = "https://raw.githubusercontent.com/google-gemini/gemini-cli/main/docs/cli/cli-reference.md";
+  log.info(`Fallback: fetching ${GITHUB_RAW}`);
+  const md = await fetchMarkdown(GITHUB_RAW);
+  const lines = md.split("\n");
+  let currentSection = "";
 
-  let md = "";
-  try {
-    log.info(`Fetching ${config.sources[0].url}`);
-    md = await fetchMarkdown(config.sources[0].url);
-    log.success(`Fetched ${md.length} chars`);
-  } catch (err: any) {
-    log.error(`Failed to fetch: ${err.message}`);
-  }
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.startsWith("## ")) { currentSection = line.replace(/^##\s+/, ""); continue; }
 
-  if (md) {
-    const lines = md.split("\n");
-    let currentSection = "";
+    if (line.startsWith("|") && i + 1 < lines.length && lines[i + 1].includes("---")) {
+      const { headers, rows } = parseMarkdownTable(lines, i);
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-
-      if (line.startsWith("## ")) {
-        currentSection = line.replace(/^##\s+/, "");
-        continue;
+      if (headers[0] === "command" && headers[1] === "description") {
+        for (const row of rows) {
+          const rawName = row[0]?.replace(/\\/g, "") || "";
+          const desc = row[1] || "";
+          if (!rawName || !desc || desc.startsWith("See ")) continue;
+          const slug = config.slugify(rawName);
+          if (seen.has(slug)) continue;
+          seen.add(slug);
+          const isSlash = rawName.startsWith("/");
+          commands.push({
+            name: rawName, slug,
+            command_type: isSlash ? "slash" : "subcommand",
+            category: inferCategory(rawName, desc),
+            description: desc, syntax: rawName,
+            source_url: GITHUB_RAW, risk_level: inferRisk(rawName, desc),
+          });
+        }
       }
 
-      // Table header row
-      if (line.startsWith("|") && i + 1 < lines.length && lines[i + 1].includes("---")) {
-        const { headers, rows } = parseMarkdownTable(lines, i);
-
-        // Table: Command | Description | Example
-        if (headers[0] === "command" && headers[1] === "description") {
-          for (const row of rows) {
-            const rawName = row[0]?.replace(/\\/g, "") || "";
-            const desc = row[1] || "";
-            const example = row[2] || "";
-            if (!rawName || !desc || desc.startsWith("See ")) continue;
-
-            const slug = config.slugify(rawName);
-            if (seen.has(slug)) continue;
-            seen.add(slug);
-
-            const isSlash = rawName.startsWith("/");
-            commands.push({
-              name: rawName,
-              slug,
-              command_type: isSlash ? "slash" : "subcommand",
-              category: inferCategory(rawName, desc),
-              description: desc,
-              syntax: rawName,
-              examples: example && !example.startsWith("See ") ? [{ label: "Usage", lang: "shell", code: example }] : null,
-              source_url: config.sources[0].url,
-              risk_level: inferRisk(rawName, desc),
-            });
-          }
-        }
-
-        // Table: Option | Alias | Type | Default | Description
-        if (headers[0] === "option" && headers.includes("description")) {
-          const descIdx = headers.indexOf("description");
-          const aliasIdx = headers.indexOf("alias");
-          const typeIdx = headers.indexOf("type");
-          const defaultIdx = headers.indexOf("default");
-
-          for (const row of rows) {
-            const option = row[0] || "";
-            if (!option.startsWith("--") && !option.startsWith("-")) continue;
-
-            const desc = row[descIdx] || "";
-            const alias = aliasIdx >= 0 ? row[aliasIdx] || "" : "";
-            const type = typeIdx >= 0 ? row[typeIdx] || "" : "";
-            const defaultVal = defaultIdx >= 0 ? row[defaultIdx] || "" : "";
-
-            const slug = config.slugify(option);
-            if (seen.has(slug)) continue;
-            seen.add(slug);
-
-            const isFlag = type === "boolean" || type === "-" || !type;
-            const notes: string[] = [];
-            if (alias && alias !== "-") notes.push(`Alias: ${alias}`);
-            if (defaultVal && defaultVal !== "-") notes.push(`Default: ${defaultVal}`);
-            if (desc.includes("Deprecated")) notes.push("Deprecated");
-
-            commands.push({
-              name: option,
-              slug,
-              command_type: isFlag ? "flag" : "option",
-              category: inferCategory(option, desc),
-              description: desc,
-              syntax: `gemini ${option}${!isFlag ? ` <${type}>` : ""}`,
-              value_hint: !isFlag ? type : null,
-              notes: notes.length > 0 ? notes : null,
-              source_url: config.sources[0].url,
-              risk_level: inferRisk(option, desc),
-            });
-          }
-        }
-
-        // Table: Alias | Resolves To | Description
-        if (headers[0] === "alias" && headers.includes("resolves to")) {
-          for (const row of rows) {
-            const alias = row[0] || "";
-            const resolves = row[1] || "";
-            const desc = row[2] || "";
-            if (!alias) continue;
-
-            const slug = `model-alias-${alias.toLowerCase().replace(/\s+/g, "-")}`;
-            if (seen.has(slug)) continue;
-            seen.add(slug);
-
-            commands.push({
-              name: `--model ${alias}`,
-              slug,
-              command_type: "option",
-              category: "Model",
-              description: `${desc} Resolves to: ${resolves}`,
-              syntax: `gemini --model ${alias}`,
-              value_hint: alias,
-              notes: [`Resolves to: ${resolves}`],
-              source_url: config.sources[0].url,
-              risk_level: "low",
-            });
-          }
-        }
-
-        // Table: Command | Description (interactive slash commands)
-        if (headers[0] === "command" && headers[1] === "description" && currentSection.toLowerCase().includes("interactive")) {
-          // Already handled above, but ensure slash commands get slash type
+      if (headers[0] === "option" && headers.includes("description")) {
+        const descIdx = headers.indexOf("description");
+        const aliasIdx = headers.indexOf("alias");
+        const typeIdx = headers.indexOf("type");
+        const defaultIdx = headers.indexOf("default");
+        for (const row of rows) {
+          const option = row[0] || "";
+          if (!option.startsWith("--") && !option.startsWith("-")) continue;
+          const desc = row[descIdx] || "";
+          const alias = aliasIdx >= 0 ? row[aliasIdx] || "" : "";
+          const type = typeIdx >= 0 ? row[typeIdx] || "" : "";
+          const defaultVal = defaultIdx >= 0 ? row[defaultIdx] || "" : "";
+          const slug = config.slugify(option);
+          if (seen.has(slug)) continue;
+          seen.add(slug);
+          const isFlag = type === "boolean" || type === "-" || !type;
+          const notes: string[] = [];
+          if (alias && alias !== "-") notes.push(`Alias: ${alias}`);
+          if (defaultVal && defaultVal !== "-") notes.push(`Default: ${defaultVal}`);
+          commands.push({
+            name: option, slug,
+            command_type: isFlag ? "flag" : "option",
+            category: inferCategory(option, desc),
+            description: desc,
+            syntax: `gemini ${option}${!isFlag ? ` <${type}>` : ""}`,
+            value_hint: !isFlag ? type : null,
+            notes: notes.length > 0 ? notes : null,
+            source_url: GITHUB_RAW, risk_level: inferRisk(option, desc),
+          });
         }
       }
     }
   }
+}
 
-  // Fallback known commands if scrape is empty
+export async function scrape(): Promise<ScrapedCommand[]> {
+  const commands: ScrapedCommand[] = [];
+  const seen = new Set<string>();
+
+  // Primary: geminicli.com HTML pages
+  for (const source of config.sources) {
+    log.info(`Fetching ${source.url}`);
+    try {
+      await scrapeHtml(source.url, commands, seen);
+      log.success(`Scraped from ${source.label}: ${commands.length} total`);
+    } catch (err: any) {
+      log.warn(`${source.url} failed: ${err.message}`);
+    }
+  }
+
+  // Fallback: GitHub raw markdown if HTML sources returned nothing
+  if (commands.length === 0) {
+    try {
+      await scrapeGitHubMarkdown(commands, seen);
+    } catch (err: any) {
+      log.warn(`GitHub markdown fallback failed: ${err.message}`);
+    }
+  }
+
+  // Always-present known commands
   const known: ScrapedCommand[] = [
     { name: "--model", slug: "model", command_type: "option", category: "Model", description: "Select the Gemini model variant (e.g. gemini-2.5-pro, auto).", syntax: "gemini --model <model-id>", value_hint: "<model-id>", source_url: config.sources[0].url, risk_level: "low" },
     { name: "--prompt", slug: "prompt", command_type: "option", category: "Session", description: "Non-interactive prompt. Forces headless mode and exits when done.", syntax: 'gemini --prompt "<query>"', value_hint: "<query>", source_url: config.sources[0].url, risk_level: "low" },
