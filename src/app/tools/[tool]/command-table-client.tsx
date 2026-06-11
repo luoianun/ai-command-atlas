@@ -47,6 +47,7 @@ export function CommandTableClient({ commands, toolSlug }: { commands: Command[]
 
   return (
     <>
+      {/* Tabs */}
       <div className="flex gap-[2px] border-b border-[var(--border)] pt-4 overflow-x-auto">
         {TABS.map(tb => (
           <button key={tb.key} onClick={() => setTab(tb.key)}
@@ -62,64 +63,75 @@ export function CommandTableClient({ commands, toolSlug }: { commands: Command[]
         ))}
       </div>
 
-      <div className="flex items-center justify-between py-4 gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative">
-            <svg className="absolute left-[9px] top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" width="13" height="13" viewBox="0 0 15 15" fill="none">
-              <path d="M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zm-.657 3.757 2.7 2.7-.707.707-2.7-2.7a4.5 4.5 0 11.707-.707z" fill="currentColor" fillRule="evenodd"/>
-            </svg>
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t.commands.filterPlaceholder}
-              className="h-[34px] pl-[32px] pr-[10px] w-[220px] border border-[var(--border)] rounded-[var(--r)] font-mono text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none focus:border-[var(--accent)] transition-colors placeholder:font-sans placeholder:text-[var(--muted)]" />
+      {/* Toolbar */}
+      <div className="toolbar-card p-3 my-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative">
+              <svg className="absolute left-[9px] top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" width="13" height="13" viewBox="0 0 15 15" fill="none">
+                <path d="M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zm-.657 3.757 2.7 2.7-.707.707-2.7-2.7a4.5 4.5 0 11.707-.707z" fill="currentColor" fillRule="evenodd"/>
+              </svg>
+              <input
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder={t.commands.filterPlaceholder}
+                aria-label={t.commands.filterPlaceholder}
+                className="focus-ring h-[34px] pl-[32px] pr-[10px] w-[220px] border border-[var(--border)] rounded-[var(--r)] font-mono text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none focus:border-[var(--accent)] transition-colors placeholder:font-sans placeholder:text-[var(--muted)]"
+              />
+            </div>
+            <select value={cat} onChange={e => setCat(e.target.value)}
+              className="focus-ring h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
+              {CATEGORIES.map(c => <option key={c} value={c}>{c ? (t.commands.categories[c as keyof typeof t.commands.categories] ?? c) : t.commands.allCategories}</option>)}
+            </select>
+            <select value={risk} onChange={e => setRisk(e.target.value)}
+              className="focus-ring h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
+              {RISKS.map(r => <option key={r} value={r}>{r || t.commands.allRisks}</option>)}
+            </select>
           </div>
-          <select value={cat} onChange={e => setCat(e.target.value)}
-            className="h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
-            {CATEGORIES.map(c => <option key={c} value={c}>{c ? (t.commands.categories[c as keyof typeof t.commands.categories] ?? c) : t.commands.allCategories}</option>)}
-          </select>
-          <select value={risk} onChange={e => setRisk(e.target.value)}
-            className="h-[34px] px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
-            {RISKS.map(r => <option key={r} value={r}>{r || t.commands.allRisks}</option>)}
-          </select>
+          <span className="text-[12px] text-[var(--muted)]">{t.commands.commandCount(filtered.length)}</span>
         </div>
-        <span className="text-[12px] text-[var(--muted)]">{t.commands.commandCount(filtered.length)}</span>
       </div>
 
-      <div className="overflow-x-auto mb-12">
-        <table className="w-full border-collapse border border-[var(--border)] rounded-[var(--r)] overflow-hidden text-[13px]">
-          <thead>
-            <tr>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[200px] whitespace-nowrap">{t.commands.command}</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[90px]">{t.commands.type}</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)]">{t.commands.description}</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[110px]">{t.commands.category}</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[76px]">{t.commands.risk}</th>
-              <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[96px]">{t.commands.source}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((cmd, idx) => (
-              <tr key={cmd.id} onClick={() => router.push(`/commands/${toolSlug}/${cmd.slug}`)}
-                className="cursor-pointer hover:bg-[var(--surface)] transition-colors">
-                <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>
-                  <div className="font-mono text-[12px] font-semibold text-[var(--accent)]">{cmd.name}</div>
-                  {cmd.value_hint && <div className="font-mono text-[11px] text-[var(--muted)] mt-[2px]">{cmd.value_hint}</div>}
-                </td>
-                <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><TypeBadge type={cmd.command_type} /></td>
-                <td className={`px-[14px] py-[10px] text-[var(--fg)] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>{desc(cmd)}</td>
-                <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><CatBadge label={t.commands.categories[cmd.category as keyof typeof t.commands.categories] ?? cmd.category} /></td>
-                <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><RiskBadge level={cmd.risk_level} /></td>
-                <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><SourceBadge source={cmd.source} /></td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
+      {/* Table */}
+      <div className="panel-card overflow-hidden mb-12">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-[var(--muted)]">
-                  <strong className="text-[var(--fg)] block text-[14px] mb-[6px]">{t.commands.noCommandsFound}</strong>
-                  {t.commands.clearFilters}
-                </td>
+                <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[200px] whitespace-nowrap">{t.commands.command}</th>
+                <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[90px]">{t.commands.type}</th>
+                <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)]">{t.commands.description}</th>
+                <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[110px]">{t.commands.category}</th>
+                <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[76px]">{t.commands.risk}</th>
+                <th className="text-left px-[14px] py-2 text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] bg-[var(--surface)] border-b border-[var(--border)] w-[96px]">{t.commands.source}</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map((cmd, idx) => (
+                <tr key={cmd.id} onClick={() => router.push(`/commands/${toolSlug}/${cmd.slug}`)}
+                  className="interactive-row cursor-pointer">
+                  <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>
+                    <div className="font-mono text-[12px] font-semibold text-[var(--accent)]">{cmd.name}</div>
+                    {cmd.value_hint && <div className="font-mono text-[11px] text-[var(--muted)] mt-[2px]">{cmd.value_hint}</div>}
+                  </td>
+                  <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><TypeBadge type={cmd.command_type} /></td>
+                  <td className={`px-[14px] py-[10px] text-[var(--fg)] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>{desc(cmd)}</td>
+                  <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><CatBadge label={t.commands.categories[cmd.category as keyof typeof t.commands.categories] ?? cmd.category} /></td>
+                  <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><RiskBadge level={cmd.risk_level} /></td>
+                  <td className={`px-[14px] py-[10px] ${idx < filtered.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}><SourceBadge source={cmd.source} /></td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-[var(--muted)]">
+                    <strong className="text-[var(--fg)] block text-[14px] mb-[6px]">{t.commands.noCommandsFound}</strong>
+                    {t.commands.clearFilters}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   );

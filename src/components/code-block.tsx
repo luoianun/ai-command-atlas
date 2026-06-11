@@ -9,7 +9,7 @@ interface CodeBlockProps {
 
 export function CodeBlock({ lang = "shell", code, copyText }: CodeBlockProps) {
   return (
-    <div className="relative bg-[var(--code-bg)] rounded-[var(--r)] overflow-hidden mt-2">
+    <div className="relative bg-[var(--code-bg)] rounded-[12px] overflow-hidden mt-2 shadow-[0_12px_30px_rgba(0,0,0,.16)] border border-[rgba(255,255,255,.08)]">
       <div className="flex items-center justify-between px-[14px] pt-2 pb-[6px] border-b border-[rgba(255,255,255,.06)]">
         <span className="font-mono text-[10px] font-semibold text-[#71717a] uppercase tracking-[.06em]">{lang}</span>
         <CopyButton text={copyText ?? code} />

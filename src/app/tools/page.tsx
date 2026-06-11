@@ -33,22 +33,28 @@ export default function ToolsPage() {
         <p className="text-[14px] text-[var(--muted)]">{t.tools.subtitle(tools.length)}</p>
       </div>
 
-      <div className="flex items-center gap-[10px] py-[18px] pb-4 flex-wrap">
+      <div className="toolbar-card p-3 my-4 flex items-center gap-[10px] flex-wrap">
         <div className="relative flex-1 max-w-[360px] min-w-[200px]">
-          <svg className="absolute left-[10px] top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" width="13" height="13" viewBox="0 0 15 15" fill="none">
+          <svg aria-hidden="true" className="absolute left-[10px] top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" width="13" height="13" viewBox="0 0 15 15" fill="none">
             <path d="M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zm-.657 3.757 2.7 2.7-.707.707-2.7-2.7a4.5 4.5 0 11.707-.707z" fill="currentColor" fillRule="evenodd"/>
           </svg>
-          <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t.tools.searchPlaceholder}
-            className="w-full h-9 pl-[34px] pr-3 border border-[var(--border)] rounded-[var(--r)] font-mono text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(37,99,235,.07)] transition-all placeholder:font-sans placeholder:text-[var(--muted)]" />
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder={t.tools.searchPlaceholder}
+            aria-label={t.tools.searchPlaceholder}
+            className="focus-ring w-full h-9 pl-[34px] pr-3 border border-[var(--border)] rounded-[var(--r)] font-mono text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none transition-all placeholder:font-sans placeholder:text-[var(--muted)]"
+          />
         </div>
         <div className="flex items-center gap-[6px] flex-wrap">
           <span className="text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.06em] whitespace-nowrap">{t.tools.provider}</span>
           <div className="flex gap-1 flex-wrap">
             {PROVIDERS.map(p => (
               <button key={p} onClick={() => setProvider(p)}
+                aria-pressed={provider === p}
                 className={`px-[10px] py-1 border rounded-full text-[12px] font-medium cursor-pointer transition-all whitespace-nowrap
                   ${provider === p
-                    ? "bg-[var(--fg)] border-[var(--fg)] text-white"
+                    ? "bg-[var(--fg)] border-[var(--fg)] text-[var(--bg)]"
                     : "border-[var(--border)] text-[var(--muted)] bg-[var(--bg)] hover:border-[#a1a1aa] hover:text-[var(--fg)]"}`}>
                 {p || t.tools.all}
               </button>
@@ -61,8 +67,9 @@ export default function ToolsPage() {
       <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3 pb-12 max-[700px]:grid-cols-1">
         {visible.map(tl => (
           <Link key={tl.id} href={`/tools/${tl.slug}`}
-            className="flex flex-col border border-[var(--border)] rounded-[8px] p-[18px_20px] no-underline text-[var(--fg)] hover:border-[#a1a1aa] hover:shadow-[0_2px_10px_rgba(0,0,0,.06)] transition-all cursor-pointer">
-            <div className="flex items-start gap-[14px] mb-3">
+            className="group relative panel-card interactive-card flex flex-col p-5 no-underline text-[var(--fg)] overflow-hidden">
+            <span className="absolute top-0 left-0 right-0 h-[3px] opacity-60 transition-opacity group-hover:opacity-100" style={{ background: tl.color }} />
+            <div className="flex items-start gap-[14px] mb-3 mt-2">
               <ToolAvatar slug={tl.slug} avatar={tl.avatar} color={tl.color} size={40} />
               <div className="flex-1 min-w-0">
                 <div className="text-[15px] font-bold tracking-[-0.01em] mb-[2px]">{tl.name}</div>

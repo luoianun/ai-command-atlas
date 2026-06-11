@@ -11,10 +11,12 @@ export const dictionaries = {
       stats: { clis: "CLIs", commands: "Commands", slash: "Slash Commands", official: "Official Sources" },
     },
     search: {
-      placeholder: "Search commands, tools, categories…",
+      placeholder: "Search commands, tools, categories...",
       noResults: "No results for",
-      navigate: "↑↓ navigate",
-      open: "↵ open · Esc close",
+      suggestions: "Suggestions",
+      searchAll: "Search all →",
+      navigate: "↑↓ Navigate",
+      open: "Enter Search all · Esc Close",
     },
     commands: {
       title: "All Commands",
@@ -33,6 +35,7 @@ export const dictionaries = {
       clearFilters: "Try clearing the filters.",
       tabs: { all: "All", option: "Options", slash: "Slash", subcommand: "Subcommand", flag: "Flag", config: "Config" },
       commandCount: (n: number) => `${n} command${n !== 1 ? "s" : ""}`,
+      showingRange: (from: number, to: number, total: number) => `Showing ${from}-${to} of ${total}`,
       categories: { Model: "Model", Session: "Session", Permission: "Permission", Config: "Config", MCP: "MCP", "Slash Commands": "Slash Commands" },
     },
     tools: {
@@ -88,6 +91,7 @@ export const dictionaries = {
       destructiveHigh: "Potentially destructive",
       copied: "✓ Copied",
       copy: "Copy",
+      notAvailable: "Not available",
     },
     badge: {
       low: "Low", medium: "Medium", high: "High",
@@ -114,8 +118,10 @@ export const dictionaries = {
     search: {
       placeholder: "搜索命令、工具、分类…",
       noResults: "未找到",
+      suggestions: "联想",
+      searchAll: "搜索全部 →",
       navigate: "↑↓ 导航",
-      open: "↵ 打开 · Esc 关闭",
+      open: "Enter 搜索全部 · Esc 关闭",
     },
     commands: {
       title: "所有命令",
@@ -134,6 +140,7 @@ export const dictionaries = {
       clearFilters: "请尝试清除筛选条件。",
       tabs: { all: "全部", option: "参数", slash: "斜杠", subcommand: "子命令", flag: "标志", config: "配置" },
       commandCount: (n: number) => `${n} 条命令`,
+      showingRange: (from: number, to: number, total: number) => `第 ${from}-${to} 条，共 ${total} 条`,
       categories: { Model: "模型", Session: "会话", Permission: "权限", Config: "配置", MCP: "MCP", "Slash Commands": "斜杠命令" },
     },
     tools: {
@@ -189,6 +196,7 @@ export const dictionaries = {
       destructiveHigh: "可能破坏性操作",
       copied: "✓ 已复制",
       copy: "复制",
+      notAvailable: "不适用",
     },
     badge: {
       low: "低", medium: "中", high: "高",

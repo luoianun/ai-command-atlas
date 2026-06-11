@@ -22,12 +22,18 @@ export function SearchBar({ activeTool }: { activeTool?: string }) {
   const toolParam = activeTool && activeTool !== "all" ? `&tool=${activeTool}` : "";
 
   const fetchSuggestions = useCallback(async (q: string) => {
-    if (!q.trim()) { setSuggestions([]); setOpen(false); return; }
-    const res = await fetch(`/api/suggest?q=${encodeURIComponent(q)}${toolParam}`);
-    const data: Suggestion[] = await res.json();
-    setSuggestions(data);
-    setFocusIdx(-1);
-    setOpen(true);
+    if (!q.trim()) { setSuggestions([]); setOpen(false); setFocusIdx(-1); return; }
+    try {
+      const res = await fetch(`/api/suggest?q=${encodeURIComponent(q)}${toolParam}`);
+      const data: Suggestion[] = await res.json();
+      setSuggestions(data);
+      setFocusIdx(-1);
+      setOpen(true);
+    } catch {
+      setSuggestions([]);
+      setOpen(false);
+      setFocusIdx(-1);
+    }
   }, [toolParam]);
 
   useEffect(() => {
@@ -82,6 +88,9 @@ export function SearchBar({ activeTool }: { activeTool?: string }) {
     }
   };
 
+  const listboxId = "search-suggestions";
+  const listboxOpen = open && suggestions.length > 0;
+
   return (
     <div
       className="relative max-w-[560px] mx-auto mb-5"
@@ -94,6 +103,11 @@ export function SearchBar({ activeTool }: { activeTool?: string }) {
       <input
         ref={inputRef}
         type="text"
+        role="combobox"
+        aria-expanded={listboxOpen}
+        aria-autocomplete="list"
+        aria-controls={listboxOpen ? listboxId : undefined}
+        aria-activedescendant={listboxOpen && focusIdx >= 0 ? `suggestion-${focusIdx}` : undefined}
         value={query}
         onChange={e => setQuery(e.target.value)}
         onKeyDown={onKeyDown}
@@ -101,29 +115,32 @@ export function SearchBar({ activeTool }: { activeTool?: string }) {
         placeholder={t.search.placeholder}
         autoComplete="off"
         spellCheck={false}
-        className="w-full h-[46px] pl-10 pr-12 border border-[var(--border)] rounded-[var(--r)] font-mono text-[13px] text-[var(--fg)] bg-[var(--bg)] outline-none transition-[border-color,box-shadow] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(37,99,235,.08)]"
+        className="focus-ring w-full h-12 pl-10 pr-12 border border-[var(--border)] rounded-[14px] font-mono text-[13px] text-[var(--fg)] bg-[var(--bg)] outline-none transition-[border-color,box-shadow]"
       />
       <kbd className="absolute right-[11px] top-1/2 -translate-y-1/2 font-mono text-[10px] text-[var(--muted)] bg-[var(--surface)] border border-[var(--border)] rounded-[4px] px-[5px] py-[1px]">
-        ⌘K
+        Ctrl/⌘K
       </kbd>
 
-      {open && suggestions.length > 0 && (
-        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-[var(--r)] shadow-[0_8px_24px_rgba(0,0,0,.08)] z-[100] overflow-hidden text-left">
-          <div className="flex items-center justify-between px-[14px] pt-[8px] pb-[4px]">
-            <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-[.06em]">联想</span>
+      {listboxOpen && (
+        <div id={listboxId} role="listbox" className="absolute top-[calc(100%+4px)] left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-[12px] shadow-[0_16px_40px_rgba(0,0,0,.14)] z-[100] overflow-hidden text-left">
+          <div className="flex items-center justify-between px-[14px] pt-[10px] pb-[6px] bg-[var(--surface)]">
+            <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-[.06em]">{t.search.suggestions}</span>
             <button
               onMouseDown={e => { e.preventDefault(); goToCommandsPage(query); }}
               className="text-[10px] text-[var(--accent)] hover:underline cursor-pointer bg-transparent border-0"
             >
-              搜索全部 →
+              {t.search.searchAll}
             </button>
           </div>
 
           {suggestions.map((s, i) => (
             <button
               key={`${s.tool_slug}-${s.slug}`}
+              id={`suggestion-${i}`}
+              role="option"
+              aria-selected={i === focusIdx}
               onMouseDown={() => navigateToCommand(s.tool_slug, s.slug)}
-              className={`w-full flex items-center gap-[10px] px-[14px] py-[8px] cursor-pointer text-[var(--fg)] transition-colors text-left border-0 bg-transparent ${i === focusIdx ? "bg-[var(--surface)]" : "hover:bg-[var(--surface)]"}`}
+              className={`w-full flex items-center gap-[10px] px-[14px] py-[9px] cursor-pointer text-[var(--fg)] transition-colors text-left border-0 bg-transparent ${i === focusIdx ? "bg-[var(--surface)]" : "hover:bg-[var(--surface)]"}`}
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-[var(--muted)] flex-shrink-0">
                 <path d="M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zm-.657 3.757 2.7 2.7-.707.707-2.7-2.7a4.5 4.5 0 11.707-.707z" fill="currentColor" fillRule="evenodd" transform="scale(0.8) translate(1.5,1.5)"/>
@@ -137,15 +154,15 @@ export function SearchBar({ activeTool }: { activeTool?: string }) {
             </button>
           ))}
 
-          <div className="flex justify-between px-[14px] py-[7px] border-t border-[var(--border-light)] text-[11px] text-[var(--muted)]">
-            <span>↑↓ 导航</span>
-            <span>Enter 搜索全部 · Esc 关闭</span>
+          <div className="flex justify-between px-[14px] py-[8px] border-t border-[var(--border-light)] bg-[var(--surface)] text-[11px] text-[var(--muted)]">
+            <span>{t.search.navigate}</span>
+            <span>{t.search.open}</span>
           </div>
         </div>
       )}
 
       {open && query.trim() && suggestions.length === 0 && (
-        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-[var(--r)] shadow-[0_8px_24px_rgba(0,0,0,.08)] z-[100] p-6 text-center text-[var(--muted)] text-[13px]">
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-[var(--bg)] border border-[var(--border)] rounded-[12px] shadow-[0_16px_40px_rgba(0,0,0,.14)] z-[100] p-6 text-center text-[var(--muted)] text-[13px]">
           {t.search.noResults} &ldquo;<strong>{query}</strong>&rdquo;
         </div>
       )}
@@ -167,4 +184,3 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
     </>
   );
 }
-
