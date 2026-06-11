@@ -8,8 +8,9 @@ const config: ScraperConfig = {
   toolSlug: "kilo-code",
   toolName: "Kilo Code",
   sources: [
-    { url: "https://kilo.ai/docs/", type: "html", label: "Kilo Code docs" },
     { url: "https://kilo.ai/docs/code-with-ai/platforms/cli", type: "html", label: "CLI reference" },
+    { url: "https://kilo.ai/docs/code-with-ai/agent-modes", type: "html", label: "Agent modes" },
+    { url: "https://kilo.ai/docs/code-with-ai/slash-commands", type: "html", label: "Slash commands" },
   ],
   slugify: (name: string) =>
     name.replace(/^[-\/]+/, "").replace(/\s+/g, "-").toLowerCase(),
@@ -59,8 +60,9 @@ export async function scrape(): Promise<ScrapedCommand[]> {
           if (!text || text.length > 80) return;
 
           const isSlash = text.startsWith("/");
-          const isMode = /\b(mode|gateway|rules?|mcp|server)\b/i.test(text);
-          if (!isSlash && !isMode) return;
+          const isFlag = text.startsWith("--");
+          const isMode = /\b(mode|gateway|rules?|mcp|server|plan|debug|architect|ask|orches)\b/i.test(text);
+          if (!isSlash && !isFlag && !isMode) return;
 
           const descParts: string[] = [];
           let sibling = $el.next();
@@ -79,10 +81,10 @@ export async function scrape(): Promise<ScrapedCommand[]> {
             commands.push({
               name: text,
               slug,
-              command_type: isSlash ? "slash" : "config",
+              command_type: isSlash ? "slash" : isFlag ? "option" : "config",
               category: mapCategory(currentSection + " " + text),
               description,
-              syntax: isSlash ? text : text,
+              syntax: isSlash ? text : isFlag ? text : text,
               risk_level: inferRisk(text, description),
               source_url: source.url,
             });
@@ -94,48 +96,20 @@ export async function scrape(): Promise<ScrapedCommand[]> {
     }
   }
 
-  // Always include core known commands
+  // Comprehensive known commands as fallback
   const known: ScrapedCommand[] = [
-    {
-      name: "Code mode",
-      slug: "code-mode",
-      command_type: "config",
-      category: "Session",
-      description: "Primary autonomous coding mode. Kilo reads, writes, and executes to implement features.",
-      syntax: "Code mode (IDE)",
-      risk_level: "medium",
-      source_url: "https://kilo.ai/docs/",
-    },
-    {
-      name: "Architect mode",
-      slug: "architect-mode",
-      command_type: "config",
-      category: "Session",
-      description: "High-level planning and architecture design mode. Focuses on structure without writing code.",
-      syntax: "Architect mode (IDE)",
-      risk_level: "low",
-      source_url: "https://kilo.ai/docs/",
-    },
-    {
-      name: "Debug mode",
-      slug: "debug-mode",
-      command_type: "config",
-      category: "Session",
-      description: "Specialized debugging mode. Analyzes errors and suggests targeted fixes.",
-      syntax: "Debug mode (IDE)",
-      risk_level: "low",
-      source_url: "https://kilo.ai/docs/",
-    },
-    {
-      name: ".kilo/rules/",
-      slug: "kilo-rules",
-      command_type: "config",
-      category: "Config",
-      description: "Project rules directory. Markdown files define coding standards injected into every session.",
-      syntax: ".kilo/rules/",
-      risk_level: "low",
-      source_url: "https://kilo.ai/docs/",
-    },
+    { name: "Code mode", slug: "code-mode", command_type: "config", category: "Session", description: "Primary autonomous coding mode. Kilo reads, writes, and executes to implement features end-to-end.", syntax: "Code mode (IDE)", risk_level: "medium", source_url: "https://kilo.ai/docs/code-with-ai/agent-modes" },
+    { name: "Architect mode", slug: "architect-mode", command_type: "config", category: "Session", description: "High-level planning and architecture design mode. Focuses on structure without writing code.", syntax: "Architect mode (IDE)", risk_level: "low", source_url: "https://kilo.ai/docs/code-with-ai/agent-modes" },
+    { name: "Debug mode", slug: "debug-mode", command_type: "config", category: "Session", description: "Specialized debugging mode. Analyzes errors, traces root causes, and suggests targeted fixes.", syntax: "Debug mode (IDE)", risk_level: "low", source_url: "https://kilo.ai/docs/code-with-ai/agent-modes" },
+    { name: "Ask mode", slug: "ask-mode", command_type: "config", category: "Session", description: "Read-only Q&A mode. Kilo answers questions about the codebase without making any changes.", syntax: "Ask mode (IDE)", risk_level: "low", source_url: "https://kilo.ai/docs/code-with-ai/agent-modes" },
+    { name: "Orchestrator mode", slug: "orchestrator-mode", command_type: "config", category: "Session", description: "Multi-agent orchestration mode. Spawns sub-agents (Code, Architect, Debug) to parallelize complex tasks.", syntax: "Orchestrator mode (IDE)", risk_level: "high", source_url: "https://kilo.ai/docs/code-with-ai/agent-modes" },
+    { name: ".kilo/rules/", slug: "kilo-rules", command_type: "config", category: "Config", description: "Project rules directory. Markdown files define coding standards injected into every session.", syntax: ".kilo/rules/", risk_level: "low", source_url: "https://kilo.ai/docs/code-with-ai/platforms/cli" },
+    { name: "Kilo Gateway", slug: "kilo-gateway", command_type: "config", category: "Model", description: "Kilo's model router. Provides access to 500+ models (Claude, GPT-4o, Gemini, DeepSeek, etc.).", syntax: "Kilo Gateway (IDE settings)", risk_level: "low", source_url: "https://kilo.ai/docs/code-with-ai/platforms/cli" },
+    { name: "Auto-approve", slug: "auto-approve", command_type: "config", category: "Permission", description: "Skip confirmation for specific tool categories (file edits, terminal, browser, MCP).", syntax: "Auto-approve (IDE settings)", risk_level: "high", source_url: "https://kilo.ai/docs/code-with-ai/platforms/cli" },
+    { name: "MCP server", slug: "mcp-server", command_type: "config", category: "MCP", description: "Connect MCP servers to extend Kilo with custom tools, APIs, and data sources.", syntax: "MCP server (IDE settings)", risk_level: "medium", source_url: "https://kilo.ai/docs/code-with-ai/platforms/cli" },
+    { name: "/newtask", slug: "newtask", command_type: "slash", category: "Session", description: "Start a new task in a fresh context while preserving the current conversation summary.", syntax: "/newtask", risk_level: "low", source_url: "https://kilo.ai/docs/code-with-ai/slash-commands" },
+    { name: "/smolrules", slug: "smolrules", command_type: "slash", category: "Config", description: "Show the active project rules currently injected into the session.", syntax: "/smolrules", risk_level: "low", source_url: "https://kilo.ai/docs/code-with-ai/slash-commands" },
+    { name: "/reportbug", slug: "reportbug", command_type: "slash", category: "Session", description: "Report a bug to the Kilo team directly from the IDE.", syntax: "/reportbug", risk_level: "low", source_url: "https://kilo.ai/docs/code-with-ai/slash-commands" },
   ];
 
   for (const k of known) {

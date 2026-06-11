@@ -1,252 +1,210 @@
 import type { ScrapedCommand, ScraperConfig } from "./lib/types.js";
-import { fetchHtml, parseHtml } from "./lib/fetcher.js";
+import { fetchMarkdown } from "./lib/fetcher.js";
 import { createLogger } from "./lib/logger.js";
 
 const log = createLogger("gemini-cli");
 
-const DOCS_BASE = "https://www.geminicli.com/docs";
+const GITHUB_RAW = "https://raw.githubusercontent.com/google-gemini/gemini-cli/main/docs/cli";
 
 const config: ScraperConfig = {
   toolSlug: "gemini-cli",
   toolName: "Gemini CLI",
   sources: [
-    { url: `${DOCS_BASE}/cli/cli-reference/`, type: "html", label: "CLI reference" },
-    { url: `${DOCS_BASE}/reference/commands/`, type: "html", label: "Slash commands" },
+    { url: `${GITHUB_RAW}/cli-reference.md`, type: "markdown", label: "CLI reference (GitHub)" },
   ],
   slugify: (name: string) =>
-    name
-      .replace(/^[-\/]+/, "")
-      .replace(/\s+.*$/, "")
-      .replace(/\s+/g, "-")
-      .toLowerCase(),
+    name.replace(/^[-\/`]+/, "").replace(/`/g, "").replace(/\s+.*$/, "").replace(/\s+/g, "-").toLowerCase(),
 };
 
 export { config };
-
-export async function scrape(): Promise<ScrapedCommand[]> {
-  const commands: ScrapedCommand[] = [];
-  const existingSlugs = new Set<string>();
-
-  // 1. CLI reference — ALL data is in tables, not headings
-  try {
-    log.info(`Fetching ${config.sources[0].url}`);
-    const html = await fetchHtml(config.sources[0].url);
-    const $ = parseHtml(html);
-
-    $("table").each((_, table) => {
-      const $table = $(table);
-      const headers = $table
-        .find("thead th")
-        .map((__, th) => $(th).text().trim().toLowerCase())
-        .get();
-
-      if (headers.length < 2) return;
-
-      // Table: Command | Description | Example (CLI commands)
-      if (headers[0] === "command" && headers[1] === "description") {
-        $table.find("tbody tr").each((__, row) => {
-          const cells = $(row).find("td");
-          if (cells.length < 2) return;
-          const rawName = $(cells[0]).text().replace(/\s+/g, " ").trim();
-          const desc = $(cells[1]).text().replace(/\s+/g, " ").trim();
-          const example = cells.length > 2 ? $(cells[2]).text().trim() : null;
-          if (!rawName || !desc) return;
-
-          // Skip "See Extensions/MCP" reference rows
-          if (desc.startsWith("See ")) return;
-
-          const slug = deriveGeminiSlug(rawName);
-          if (existingSlugs.has(slug)) return;
-          existingSlugs.add(slug);
-
-          const isSlash = rawName.startsWith("/");
-          const isSubcmd = rawName.startsWith("gemini ") && !rawName.includes("-");
-
-          commands.push({
-            name: rawName,
-            slug,
-            command_type: isSlash ? "slash" : isSubcmd ? "subcommand" : "subcommand",
-            category: inferCategory(rawName, desc),
-            description: desc,
-            syntax: rawName,
-            value_hint: null,
-            parameters: null,
-            examples: example && !example.startsWith("See ") ? [{ label: "Usage", lang: "shell", code: example }] : null,
-            notes: null,
-            caveats: null,
-            source_url: config.sources[0].url,
-            risk_level: inferRisk(rawName, desc),
-          });
-        });
-      }
-
-      // Table: Option | Alias | Type | Default | Description (CLI options)
-      if (headers[0] === "option" && headers.includes("description")) {
-        $table.find("tbody tr").each((__, row) => {
-          const cells = $(row).find("td");
-          if (cells.length < 4) return;
-          const option = $(cells[0]).text().trim();
-          const alias = $(cells[1]).text().trim();
-          const type = $(cells[2]).text().trim();
-          const defaultVal = $(cells[3]).text().trim();
-          const desc = $(cells[4])?.text().trim() || "";
-          if (!option.startsWith("--")) return;
-
-          const slug = config.slugify(option);
-          if (existingSlugs.has(slug)) return;
-          existingSlugs.add(slug);
-
-          const hasValue = type !== "-" && type !== "boolean";
-          const notes: string[] = [];
-          if (alias && alias !== "-") notes.push(`Alias: ${alias}`);
-          if (defaultVal && defaultVal !== "-") notes.push(`Default: ${defaultVal}`);
-
-          commands.push({
-            name: option,
-            slug,
-            command_type: hasValue ? "option" : "flag",
-            category: inferCategory(option, desc),
-            description: desc,
-            syntax: `gemini ${option}${hasValue ? ` <${type}>` : ""}`,
-            value_hint: hasValue ? type : null,
-            parameters: null,
-            examples: null,
-            notes: notes.length > 0 ? notes : null,
-            caveats: null,
-            source_url: config.sources[0].url,
-            risk_level: inferRisk(option, desc),
-          });
-        });
-      }
-
-      // Table: Alias | Resolves To | Description (model aliases)
-      if (headers[0] === "alias" && headers.includes("resolves to")) {
-        $table.find("tbody tr").each((__, row) => {
-          const cells = $(row).find("td");
-          if (cells.length < 3) return;
-          const alias = $(cells[0]).text().trim();
-          const resolves = $(cells[1]).text().trim();
-          const desc = $(cells[2]).text().trim();
-          if (!alias) return;
-
-          const slug = `model-alias-${alias.toLowerCase()}`;
-          if (existingSlugs.has(slug)) return;
-          existingSlugs.add(slug);
-
-          commands.push({
-            name: `--model ${alias}`,
-            slug,
-            command_type: "option",
-            category: "Model",
-            description: `${desc} Resolves to: ${resolves}`,
-            syntax: `gemini --model ${alias}`,
-            value_hint: alias,
-            parameters: null,
-            examples: null,
-            notes: [`Resolves to: ${resolves}`],
-            caveats: null,
-            source_url: config.sources[0].url,
-            risk_level: "low",
-          });
-        });
-      }
-    });
-
-    log.success(`CLI reference: ${commands.length} commands`);
-  } catch (err: any) {
-    log.error(`CLI reference failed: ${err.message}`);
-  }
-
-  // 2. Slash commands reference page — each command is an h3
-  try {
-    log.info(`Fetching ${config.sources[1].url}`);
-    const html = await fetchHtml(config.sources[1].url);
-    const $ = parseHtml(html);
-
-    // Parse h3 headings for slash commands
-    $("h3").each((_, el) => {
-      const $el = $(el);
-      const heading = $el.text().replace(/\s+/g, " ").trim();
-
-      // Match heading patterns like "/about", "/agents", "/clear"
-      const match = heading.match(/^\/([\w-]+)/);
-      if (!match) return;
-
-      const name = `/${match[1]}`;
-      const slug = config.slugify(name);
-      if (existingSlugs.has(slug)) return;
-
-      const descParts: string[] = [];
-      let sibling = $el.next();
-      while (sibling.length && !sibling.is("h2, h3")) {
-        if (sibling.is("p")) {
-          descParts.push(sibling.text().replace(/\s+/g, " ").trim());
-        }
-        sibling = sibling.next();
-      }
-
-      const description = descParts.join(" ").trim();
-      if (!description) return;
-
-      existingSlugs.add(slug);
-      commands.push({
-        name,
-        slug,
-        command_type: "slash",
-        category: inferCategory(name, description),
-        description,
-        syntax: name,
-        value_hint: null,
-        parameters: null,
-        examples: null,
-        notes: null,
-        caveats: null,
-        source_url: config.sources[1].url,
-        risk_level: inferRisk(name, description),
-      });
-    });
-
-    log.success(`Total: ${commands.length} commands`);
-  } catch (err: any) {
-    log.error(`Slash commands page failed: ${err.message}`);
-  }
-
-  return commands;
-}
-
-function deriveGeminiSlug(rawName: string): string {
-  if (rawName.startsWith("/")) {
-    return rawName.replace(/^\//, "").split(/\s+/)[0].toLowerCase();
-  }
-  // "gemini -p" → "prompt", "gemini -r" → "resume", etc.
-  const aliasMap: Record<string, string> = {
-    "gemini": "gemini-interactive",
-    'gemini -p "query"': "prompt",
-    'gemini "query"': "query-interactive",
-    "cat file | gemini": "pipe-input",
-    'gemini -i "query"': "prompt-interactive",
-    'gemini -r "latest"': "resume-latest",
-  };
-  for (const [pattern, slug] of Object.entries(aliasMap)) {
-    if (rawName.startsWith(pattern)) return slug;
-  }
-  const parts = rawName.replace(/"/g, "").split(/\s+/).filter(Boolean);
-  return parts.slice(1).filter(p => !p.startsWith('"') && !p.startsWith("<")).join("-").toLowerCase().replace(/[^a-z0-9-]/g, "") || rawName.toLowerCase().replace(/[^a-z0-9]/g, "-");
-}
 
 function inferCategory(name: string, desc: string): string {
   const lower = (name + " " + desc).toLowerCase();
   if (lower.includes("model") || lower.includes("alias")) return "Model";
   if (lower.includes("mcp") || lower.includes("extension") || lower.includes("skill") || lower.includes("tool")) return "MCP";
-  if (lower.includes("permission") || lower.includes("sandbox") || lower.includes("approval") || lower.includes("trust")) return "Permission";
+  if (lower.includes("permission") || lower.includes("sandbox") || lower.includes("approval") || lower.includes("trust") || lower.includes("yolo")) return "Permission";
   if (lower.includes("session") || lower.includes("resume") || lower.includes("clear") || lower.includes("compress") ||
-      lower.includes("help") || lower.includes("quit") || lower.includes("compact") || lower.includes("copy")) return "Session";
+      lower.includes("help") || lower.includes("quit") || lower.includes("compact") || lower.includes("reload")) return "Session";
   return "Config";
 }
 
 function inferRisk(name: string, desc: string): "low" | "medium" | "high" {
   const lower = (name + " " + desc).toLowerCase();
   if (lower.includes("yolo") || lower.includes("dangerously")) return "high";
-  if (lower.includes("sandbox") || lower.includes("approval") || lower.includes("skip-trust")) return "medium";
+  if (lower.includes("sandbox") || lower.includes("approval") || lower.includes("skip-trust") || lower.includes("auto_edit")) return "medium";
   return "low";
+}
+
+function parseMarkdownTable(lines: string[], startIdx: number): { headers: string[]; rows: string[][] } {
+  const headers = lines[startIdx]
+    .split("|")
+    .map(h => h.trim().toLowerCase().replace(/`/g, ""))
+    .filter(Boolean);
+
+  const rows: string[][] = [];
+  for (let i = startIdx + 2; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line.startsWith("|")) break;
+    const cells = line.split("|").map(c => c.trim().replace(/`/g, "")).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+    if (cells.length > 0) rows.push(cells);
+  }
+  return { headers, rows };
+}
+
+export async function scrape(): Promise<ScrapedCommand[]> {
+  const commands: ScrapedCommand[] = [];
+  const seen = new Set<string>();
+
+  let md = "";
+  try {
+    log.info(`Fetching ${config.sources[0].url}`);
+    md = await fetchMarkdown(config.sources[0].url);
+    log.success(`Fetched ${md.length} chars`);
+  } catch (err: any) {
+    log.error(`Failed to fetch: ${err.message}`);
+  }
+
+  if (md) {
+    const lines = md.split("\n");
+    let currentSection = "";
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      if (line.startsWith("## ")) {
+        currentSection = line.replace(/^##\s+/, "");
+        continue;
+      }
+
+      // Table header row
+      if (line.startsWith("|") && i + 1 < lines.length && lines[i + 1].includes("---")) {
+        const { headers, rows } = parseMarkdownTable(lines, i);
+
+        // Table: Command | Description | Example
+        if (headers[0] === "command" && headers[1] === "description") {
+          for (const row of rows) {
+            const rawName = row[0]?.replace(/\\/g, "") || "";
+            const desc = row[1] || "";
+            const example = row[2] || "";
+            if (!rawName || !desc || desc.startsWith("See ")) continue;
+
+            const slug = config.slugify(rawName);
+            if (seen.has(slug)) continue;
+            seen.add(slug);
+
+            const isSlash = rawName.startsWith("/");
+            commands.push({
+              name: rawName,
+              slug,
+              command_type: isSlash ? "slash" : "subcommand",
+              category: inferCategory(rawName, desc),
+              description: desc,
+              syntax: rawName,
+              examples: example && !example.startsWith("See ") ? [{ label: "Usage", lang: "shell", code: example }] : null,
+              source_url: config.sources[0].url,
+              risk_level: inferRisk(rawName, desc),
+            });
+          }
+        }
+
+        // Table: Option | Alias | Type | Default | Description
+        if (headers[0] === "option" && headers.includes("description")) {
+          const descIdx = headers.indexOf("description");
+          const aliasIdx = headers.indexOf("alias");
+          const typeIdx = headers.indexOf("type");
+          const defaultIdx = headers.indexOf("default");
+
+          for (const row of rows) {
+            const option = row[0] || "";
+            if (!option.startsWith("--") && !option.startsWith("-")) continue;
+
+            const desc = row[descIdx] || "";
+            const alias = aliasIdx >= 0 ? row[aliasIdx] || "" : "";
+            const type = typeIdx >= 0 ? row[typeIdx] || "" : "";
+            const defaultVal = defaultIdx >= 0 ? row[defaultIdx] || "" : "";
+
+            const slug = config.slugify(option);
+            if (seen.has(slug)) continue;
+            seen.add(slug);
+
+            const isFlag = type === "boolean" || type === "-" || !type;
+            const notes: string[] = [];
+            if (alias && alias !== "-") notes.push(`Alias: ${alias}`);
+            if (defaultVal && defaultVal !== "-") notes.push(`Default: ${defaultVal}`);
+            if (desc.includes("Deprecated")) notes.push("Deprecated");
+
+            commands.push({
+              name: option,
+              slug,
+              command_type: isFlag ? "flag" : "option",
+              category: inferCategory(option, desc),
+              description: desc,
+              syntax: `gemini ${option}${!isFlag ? ` <${type}>` : ""}`,
+              value_hint: !isFlag ? type : null,
+              notes: notes.length > 0 ? notes : null,
+              source_url: config.sources[0].url,
+              risk_level: inferRisk(option, desc),
+            });
+          }
+        }
+
+        // Table: Alias | Resolves To | Description
+        if (headers[0] === "alias" && headers.includes("resolves to")) {
+          for (const row of rows) {
+            const alias = row[0] || "";
+            const resolves = row[1] || "";
+            const desc = row[2] || "";
+            if (!alias) continue;
+
+            const slug = `model-alias-${alias.toLowerCase().replace(/\s+/g, "-")}`;
+            if (seen.has(slug)) continue;
+            seen.add(slug);
+
+            commands.push({
+              name: `--model ${alias}`,
+              slug,
+              command_type: "option",
+              category: "Model",
+              description: `${desc} Resolves to: ${resolves}`,
+              syntax: `gemini --model ${alias}`,
+              value_hint: alias,
+              notes: [`Resolves to: ${resolves}`],
+              source_url: config.sources[0].url,
+              risk_level: "low",
+            });
+          }
+        }
+
+        // Table: Command | Description (interactive slash commands)
+        if (headers[0] === "command" && headers[1] === "description" && currentSection.toLowerCase().includes("interactive")) {
+          // Already handled above, but ensure slash commands get slash type
+        }
+      }
+    }
+  }
+
+  // Fallback known commands if scrape is empty
+  const known: ScrapedCommand[] = [
+    { name: "--model", slug: "model", command_type: "option", category: "Model", description: "Select the Gemini model variant (e.g. gemini-2.5-pro, auto).", syntax: "gemini --model <model-id>", value_hint: "<model-id>", source_url: config.sources[0].url, risk_level: "low" },
+    { name: "--prompt", slug: "prompt", command_type: "option", category: "Session", description: "Non-interactive prompt. Forces headless mode and exits when done.", syntax: 'gemini --prompt "<query>"', value_hint: "<query>", source_url: config.sources[0].url, risk_level: "low" },
+    { name: "--sandbox", slug: "sandbox", command_type: "flag", category: "Permission", description: "Run in a sandboxed environment for safer code execution.", syntax: "gemini --sandbox", source_url: config.sources[0].url, risk_level: "medium" },
+    { name: "--yolo", slug: "yolo", command_type: "flag", category: "Permission", description: "Auto-approve all tool actions without confirmation. Deprecated in favor of --approval-mode=yolo.", syntax: "gemini --yolo", source_url: config.sources[0].url, risk_level: "high" },
+    { name: "--approval-mode", slug: "approval-mode", command_type: "option", category: "Permission", description: "Control tool approval: default, auto_edit, yolo, plan.", syntax: "gemini --approval-mode <mode>", value_hint: "default|auto_edit|yolo|plan", source_url: config.sources[0].url, risk_level: "medium" },
+    { name: "--resume", slug: "resume", command_type: "option", category: "Session", description: "Resume a previous session by ID or 'latest'.", syntax: 'gemini --resume "latest"', value_hint: "<session-id|latest>", source_url: config.sources[0].url, risk_level: "low" },
+    { name: "/compress", slug: "compress", command_type: "slash", category: "Session", description: "Compress conversation history to free up context window.", syntax: "/compress", source_url: config.sources[0].url, risk_level: "low" },
+    { name: "/clear", slug: "clear", command_type: "slash", category: "Session", description: "Clear the current conversation history.", syntax: "/clear", source_url: config.sources[0].url, risk_level: "low" },
+    { name: "/help", slug: "help", command_type: "slash", category: "Session", description: "Display available commands and usage information.", syntax: "/help", source_url: config.sources[0].url, risk_level: "low" },
+    { name: "GEMINI.md", slug: "gemini-md", command_type: "config", category: "Config", description: "Custom instructions file loaded from project root, injected into every session.", syntax: "GEMINI.md", source_url: config.sources[0].url, risk_level: "low" },
+    { name: "config", slug: "config", command_type: "subcommand", category: "Config", description: "View or edit Gemini CLI configuration stored in ~/.gemini/settings.json.", syntax: "gemini config", source_url: config.sources[0].url, risk_level: "low" },
+  ];
+
+  for (const k of known) {
+    if (!seen.has(k.slug)) {
+      seen.add(k.slug);
+      commands.push(k);
+    }
+  }
+
+  log.success(`Scraped ${commands.length} commands from Gemini CLI`);
+  return commands;
 }

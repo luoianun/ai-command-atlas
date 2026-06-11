@@ -98,5 +98,25 @@ export async function scrape(): Promise<ScrapedCommand[]> {
     }
   }
 
+  // Kiro docs may return empty — ensure core commands always present
+  const known: ScrapedCommand[] = [
+    { name: "kiro", slug: "kiro-start", command_type: "subcommand", category: "Session", description: "Start Kiro IDE or open a project. Entry point for the Kiro CLI.", syntax: "kiro [path]", risk_level: "low", source_url: "https://kiro.dev/docs/cli/" },
+    { name: "--chat", slug: "chat", command_type: "flag", category: "Session", description: "Start Kiro in chat mode for interactive Q&A without a project context.", syntax: "kiro --chat", risk_level: "low", source_url: "https://kiro.dev/docs/cli/" },
+    { name: "Spec-driven development", slug: "spec-driven", command_type: "config", category: "Session", description: "Define a spec file (.kiro/specs/) and let Kiro generate tasks, code, and tests.", syntax: ".kiro/specs/<feature>.md", risk_level: "medium", source_url: "https://kiro.dev/docs/specs/" },
+    { name: "Hooks", slug: "hooks", command_type: "config", category: "Config", description: "Event-driven automation. Trigger AI tasks on file save, git commit, and other events.", syntax: ".kiro/hooks/", risk_level: "medium", source_url: "https://kiro.dev/docs/hooks/" },
+    { name: "Steering rules", slug: "steering-rules", command_type: "config", category: "Config", description: "Persistent instructions injected into every Kiro session. Define coding style, architecture, and constraints.", syntax: ".kiro/steering/", risk_level: "low", source_url: "https://kiro.dev/docs/steering/" },
+    { name: "Agent mode", slug: "agent-mode", command_type: "config", category: "Permission", description: "Fully autonomous mode. Kiro reads, writes, and executes to implement a spec end-to-end.", syntax: "Agent mode (IDE)", risk_level: "high", source_url: "https://kiro.dev/docs/agents/" },
+    { name: "MCP server", slug: "mcp-server", command_type: "config", category: "MCP", description: "Connect MCP servers to extend Kiro with external tools, APIs, and data sources.", syntax: "MCP server (.kiro/settings.json)", risk_level: "medium", source_url: "https://kiro.dev/docs/mcp/" },
+    { name: "/new-spec", slug: "new-spec", command_type: "slash", category: "Session", description: "Create a new spec file for a feature. Kiro scaffolds requirements and task list.", syntax: "/new-spec", risk_level: "low", source_url: "https://kiro.dev/docs/specs/" },
+    { name: "/implement", slug: "implement", command_type: "slash", category: "Session", description: "Implement the current spec. Kiro generates code for each task in the spec.", syntax: "/implement", risk_level: "medium", source_url: "https://kiro.dev/docs/specs/" },
+    { name: "Model selection", slug: "model-selection", command_type: "config", category: "Model", description: "Choose the AI model for Kiro sessions (Claude Sonnet, Haiku, etc.).", syntax: "Model selection (IDE settings)", risk_level: "low", source_url: "https://kiro.dev/docs/models/" },
+    { name: ".kiro/settings.json", slug: "kiro-settings", command_type: "config", category: "Config", description: "Project-level Kiro configuration: MCP servers, model, permissions, hooks.", syntax: ".kiro/settings.json", risk_level: "low", source_url: "https://kiro.dev/docs/cli/" },
+  ];
+
+  const seenSlugs = new Set(commands.map(c => c.slug));
+  for (const k of known) {
+    if (!seenSlugs.has(k.slug)) commands.push(k);
+  }
+
   return commands;
 }

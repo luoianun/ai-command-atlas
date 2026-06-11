@@ -8,8 +8,8 @@ const config: ScraperConfig = {
   toolSlug: "goose",
   toolName: "Goose",
   sources: [
-    { url: "https://block.github.io/goose/docs/guides/goose-cli-commands/", type: "html", label: "CLI commands" },
-    { url: "https://block.github.io/goose/docs/guides/quick-tips/", type: "html", label: "Slash commands / tips" },
+    { url: "https://goose-docs.ai/docs/guides/goose-cli-commands/", type: "html", label: "CLI commands" },
+    { url: "https://goose-docs.ai/docs/guides/quick-tips/", type: "html", label: "Slash commands / tips" },
   ],
   slugify: (name: string) =>
     name.replace(/^[-\/]+/, "").replace(/\s+/g, "-").toLowerCase(),
@@ -135,6 +135,24 @@ export async function scrape(): Promise<ScrapedCommand[]> {
     });
   } catch (err: any) {
     log.warn(`Slash commands page failed: ${err.message}`);
+  }
+
+  // Fallback known commands if pages are unreachable
+  const known: ScrapedCommand[] = [
+    { name: "goose run", slug: "run", command_type: "subcommand", category: "Session", description: "Start a new Goose session in the current directory.", syntax: "goose run", risk_level: "medium", source_url: "https://goose-docs.ai/docs/guides/goose-cli-commands/" },
+    { name: "goose session", slug: "session", command_type: "subcommand", category: "Session", description: "Manage Goose sessions: list, resume, or delete.", syntax: "goose session [list|resume|delete]", risk_level: "low", source_url: "https://goose-docs.ai/docs/guides/goose-cli-commands/" },
+    { name: "goose configure", slug: "configure", command_type: "subcommand", category: "Config", description: "Interactive configuration wizard for providers, models, and extensions.", syntax: "goose configure", risk_level: "low", source_url: "https://goose-docs.ai/docs/guides/goose-cli-commands/" },
+    { name: "goose info", slug: "info", command_type: "subcommand", category: "Config", description: "Display current Goose configuration and environment information.", syntax: "goose info", risk_level: "low", source_url: "https://goose-docs.ai/docs/guides/goose-cli-commands/" },
+    { name: "--provider", slug: "provider", command_type: "option", category: "Model", description: "Select the AI provider (openai, anthropic, google, ollama, etc.).", syntax: "goose --provider <provider>", value_hint: "<provider>", risk_level: "low", source_url: "https://goose-docs.ai/docs/guides/goose-cli-commands/" },
+    { name: "--model", slug: "model", command_type: "option", category: "Model", description: "Specify the model to use for the session.", syntax: "goose --model <model-id>", value_hint: "<model-id>", risk_level: "low", source_url: "https://goose-docs.ai/docs/guides/goose-cli-commands/" },
+    { name: "/exit", slug: "exit", command_type: "slash", category: "Session", description: "Exit the current Goose session.", syntax: "/exit", risk_level: "low", source_url: "https://goose-docs.ai/docs/guides/quick-tips/" },
+    { name: "/clear", slug: "clear", command_type: "slash", category: "Session", description: "Clear the conversation history.", syntax: "/clear", risk_level: "low", source_url: "https://goose-docs.ai/docs/guides/quick-tips/" },
+    { name: "goose mcp", slug: "mcp", command_type: "subcommand", category: "MCP", description: "Manage MCP (Model Context Protocol) servers and extensions.", syntax: "goose mcp", risk_level: "low", source_url: "https://goose-docs.ai/docs/guides/goose-cli-commands/" },
+  ];
+
+  const seenSlugs = new Set(commands.map(c => c.slug));
+  for (const k of known) {
+    if (!seenSlugs.has(k.slug)) commands.push(k);
   }
 
   return commands;
