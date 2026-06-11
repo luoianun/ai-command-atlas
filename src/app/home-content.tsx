@@ -47,17 +47,17 @@ export function HomeContent({
         </div>
 
         {/* Stats grid */}
-        <div className="py-8">
-          <div className="grid grid-cols-4 gap-4 max-[600px]:grid-cols-2">
+        <div className="py-4">
+          <div className="grid grid-cols-4 gap-3 max-[600px]:grid-cols-2">
             {[
               { n: stats.cli_count, l: t.home.stats.clis },
               { n: stats.command_count, l: t.home.stats.commands },
               { n: stats.slash_count, l: t.home.stats.slash },
               { n: stats.official_count, l: t.home.stats.official },
             ].map((s, i) => (
-              <div key={i} className="panel-card interactive-card text-center px-4 py-5">
-                <div className="font-mono text-[24px] font-semibold text-[var(--fg)] leading-[1.2]">{s.n}</div>
-                <div className="text-[11px] text-[var(--muted)] mt-1">{s.l}</div>
+              <div key={i} className="panel-card interactive-card flex items-center gap-3 px-4 py-3">
+                <div className="font-mono text-[20px] font-semibold text-[var(--fg)] leading-none">{s.n}</div>
+                <div className="text-[11px] text-[var(--muted)]">{s.l}</div>
               </div>
             ))}
           </div>
