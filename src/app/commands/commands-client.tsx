@@ -9,6 +9,7 @@ type Tab = "all" | CommandType;
 
 const TAB_KEYS: Tab[] = ["all", "option", "slash", "subcommand", "flag", "config"];
 const RISKS = ["", "low", "medium", "high"];
+const PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
 
 export function CommandsClient({
   initialCommands,
@@ -27,7 +28,7 @@ export function CommandsClient({
   const [risk, setRisk] = useState(initialFilters.risk);
   const [toolFilter, setToolFilter] = useState(initialFilters.tool);
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 50;
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(20);
   const router = useRouter();
   const t = useT();
   const { lang } = useLang();
@@ -83,9 +84,10 @@ export function CommandsClient({
   const updateToolFilter = (nextTool: string) => { setToolFilter(nextTool); setPage(1); };
   const updateCategory = (nextCategory: string) => { setCat(nextCategory); setPage(1); };
   const updateRisk = (nextRisk: string) => { setRisk(nextRisk); setPage(1); };
+  const updatePageSize = (nextPageSize: number) => { setPageSize(nextPageSize as (typeof PAGE_SIZE_OPTIONS)[number]); setPage(1); };
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <>
@@ -188,12 +190,22 @@ export function CommandsClient({
         </div>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between py-4 mb-8">
+      <div className="flex items-center justify-between gap-3 flex-wrap py-4 mb-8">
+        <div className="flex items-center gap-3 flex-wrap">
           <span className="text-[12px] text-[var(--muted)]">
-            {t.commands.showingRange((page - 1) * PAGE_SIZE + 1, Math.min(page * PAGE_SIZE, filtered.length), filtered.length)}
+            {filtered.length > 0 ? t.commands.showingRange((page - 1) * pageSize + 1, Math.min(page * pageSize, filtered.length), filtered.length) : t.commands.showingRange(0, 0, 0)}
           </span>
+          <label className="flex items-center gap-2 text-[12px] text-[var(--muted)]">
+            <span>{lang === "zh" ? "每页" : "Per page"}</span>
+            <select
+              value={pageSize}
+              onChange={e => updatePageSize(Number(e.target.value))}
+              className="focus-ring h-7 px-2 border border-[var(--border)] rounded-[var(--r)] text-[12px] text-[var(--fg)] bg-[var(--bg)] outline-none cursor-pointer">
+              {PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}
+            </select>
+          </label>
+        </div>
+        {totalPages > 1 && (
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage(1)} disabled={page === 1}
@@ -234,8 +246,8 @@ export function CommandsClient({
               {"»"}
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 }
