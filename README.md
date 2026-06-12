@@ -1,70 +1,90 @@
 # ai-command-atlas
 
-A searchable command reference for AI coding CLIs. Covers command-line options, slash commands, usage examples, risk levels, and official sources for Claude Code, Codex CLI, Gemini CLI, Aider, and OpenCode — all in one place.
+A searchable reference site for AI coding CLIs. It brings command-line options, slash commands, config files, examples, risk levels, official sources, and cross-tool capability comparisons into one bilingual interface.
 
 [简体中文](./README.zh-CN.md)
 
-![Next.js](https://img.shields.io/badge/Next.js-16-black) ![MySQL](https://img.shields.io/badge/MySQL-8.0-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-38bdf8) ![Docker](https://img.shields.io/badge/Docker-ready-2496ed)
+![Next.js](https://img.shields.io/badge/Next.js-16-black) ![React](https://img.shields.io/badge/React-19-61dafb) ![MySQL](https://img.shields.io/badge/MySQL-8.0-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-38bdf8) ![Docker](https://img.shields.io/badge/Docker-ready-2496ed)
 
-## Features
+## What It Does
 
-- **Full-text search** — `⌘K` / `Ctrl+K` to open; searches across command names, tool names, categories, and descriptions
-- **Tool detail pages** — Complete command listing per CLI with type tabs, category and risk-level filters
-- **Command detail pages** — Syntax, examples (with copy button), notes, caveats, and official source links
-- **Cross-tool comparison** — Side-by-side capability table across Model / Session / Permission / MCP / Config dimensions
-- **Dark / light mode** — Toggle in real time, preference persisted
-- **EN / ZH language switch** — Toggle in navbar, preference persisted
+- **Search AI CLI commands** — `⌘K` / `Ctrl+K` opens global search across tools, commands, categories, descriptions, and syntax.
+- **Browse by tool** — Each CLI has a detail page with command counts, metadata, filters, and source links.
+- **Browse all commands** — Filter by tool, type, category, risk level, and text query.
+- **Read command details** — Syntax, parameters, examples, notes, caveats, copy buttons, and official documentation links.
+- **Compare capabilities** — Side-by-side table for Model, Session, Permission, MCP, and Config capabilities, with sticky first column and horizontal scrolling.
+- **Switch language and theme** — English / Chinese UI and dark / light mode are both persisted locally.
+- **Update data with scrapers** — TypeScript scrapers fetch official docs, enrich command records, generate SQL, and optionally translate content with Claude.
 
 ## Supported Tools
 
-| Tool | Provider |
-|------|----------|
-| Claude Code | Anthropic |
-| Codex CLI | OpenAI |
-| Gemini CLI | Google |
-| Aider | Independent |
-| OpenCode | SST · Independent |
+| Tool | Provider | Coverage |
+|------|----------|----------|
+| Claude Code | Anthropic | CLI commands, slash commands, permissions, MCP, config |
+| Codex CLI | OpenAI | CLI options, approval modes, sandboxing, config |
+| Gemini CLI | Google | CLI reference, slash commands, extensions |
+| Aider | Independent | CLI options, slash commands, model/config options |
+| OpenCode | SST / Independent | CLI commands, TUI commands, providers, config |
+| Goose | Block / AAIF | Sessions, recipes, extensions, MCP, modes |
+| Cline | Cline | VS Code commands, modes, rules, MCP prompts |
+| Kiro | AWS | CLI chat, agents, specs, steering, hooks, MCP |
+| GitHub Copilot CLI | GitHub | `gh copilot` suggest/explain/config commands |
+| Qoder | Alibaba | Quest mode, Repo Wiki, Action Flow, CLI commands |
+| Trae | ByteDance | Builder mode, chat, rules, MCP, spec workflow |
+| Kilo Code | Kilo | modes, MCP, rules, browser/terminal controls |
 
 ## Tech Stack
 
-- **Frontend** — Next.js 16 (App Router) · TypeScript · Tailwind CSS · shadcn/ui
-- **Backend** — Next.js API Routes + Server Components
-- **Database** — MySQL 8.0 (all command data stored in DB, nothing hardcoded)
+- **Frontend** — Next.js 16 App Router, React 19, TypeScript, Tailwind CSS, shadcn/base-ui-style components
+- **Backend** — Server Components, Next.js API routes, mysql2 connection pooling
+- **Database** — MySQL 8.0 with schema/seed SQL and scraper-generated enrichment data
+- **Data pipeline** — `tsx` scripts, Cheerio, Playwright fallback, GitHub API, optional Claude translation
+- **Deployment** — Docker Compose for app + MySQL, or manual Node.js/PM2/Nginx deployment
 
 ## Quick Start
 
 ### Option 1: Docker (recommended)
 
-One command to spin up the full stack. No need to install MySQL separately.
-
-**Prerequisites:** Docker Desktop
+**Prerequisite:** Docker Desktop or Docker Engine with Compose.
 
 ```bash
 git clone https://github.com/luoianun/ai-command-atlas.git
 cd ai-command-atlas
-docker compose up -d
+docker compose up -d --build
 ```
-
-On first run this will: build the image → initialize MySQL (schema + seed data) → start the app.
 
 Open http://localhost:3000
 
+On first run, MySQL initializes from:
+
+- `scripts/schema.sql` — table definitions
+- `scripts/seed.sql` — base tools, commands, comparison capabilities
+- `scripts/scraped-data.sql` — scraper-enriched command data
+
+Useful commands:
+
 ```bash
 docker compose logs -f          # follow logs
-docker compose down             # stop
-docker compose down -v          # stop and wipe data (re-initializes on next start)
+docker compose down             # stop services
+docker compose down -v          # stop and remove MySQL data volume
 ```
 
-| Service | Internal Port | Host Port |
-|---------|--------------|-----------|
+| Service | Container Port | Host Port |
+|---------|----------------|-----------|
 | Next.js app | 3000 | 3000 |
-| MySQL 8.0 | 3306 | 3307 (avoids conflict with local MySQL) |
+| MySQL 8.0 | 3306 | 3307 |
+
+For an existing database that was initialized before the newer tool set was added, import the supplemental seed once:
+
+```bash
+docker exec -i atlas-mysql mysql -u root -patlas_pass ai_command_atlas < scripts/seed-new-tools.sql
+```
 
 ### Option 2: Node.js
 
-For when you prefer not to use Docker, or want to connect to an existing MySQL instance.
+Use this when you want to run the app directly or connect to an existing MySQL instance.
 
-**Prerequisites:** Node.js 20+, MySQL 8.0
+**Prerequisites:** Node.js 20+, MySQL 8.0.
 
 ```bash
 # 1. Clone and install
@@ -72,13 +92,16 @@ git clone https://github.com/luoianun/ai-command-atlas.git
 cd ai-command-atlas
 npm install
 
-# 2. Configure database connection
+# 2. Configure database
 cp .env.example .env.local
 # Edit .env.local with your MySQL credentials
 
 # 3. Initialize database
 mysql -u root -p < scripts/schema.sql
 mysql -u root -p ai_command_atlas < scripts/seed.sql
+mysql -u root -p ai_command_atlas < scripts/scraped-data.sql
+# Optional for existing DBs that do not have the newer 7 tools yet:
+mysql -u root -p ai_command_atlas < scripts/seed-new-tools.sql
 
 # 4. Start dev server
 npm run dev
@@ -86,97 +109,70 @@ npm run dev
 
 Open http://localhost:3000
 
+## Data Scrapers
+
+The project includes per-tool scrapers under `scripts/scrapers/`. They fetch official docs, normalize commands, match or insert DB rows, generate SQL files, and can translate fields into Chinese through the Claude API.
+
+```bash
+npm run scrape -- aider --dry-run        # scrape one tool and generate SQL only
+npm run scrape -- all --dry-run          # scrape every supported tool without DB writes
+npm run scrape -- all --translate        # scrape + translate + write to DB
+npm run scrape:all                       # shorthand for all tools
+npm run scrape:translate                 # shorthand for all tools with translation
+```
+
+Supported scraper targets:
+
+```text
+aider, gemini-cli, opencode, claude-code, codex-cli, goose, cline, kiro, gh-copilot, qoder, trae, kilo-code
+```
+
+Generated SQL is written to `scripts/scrapers/output/` and is ignored by git. To export the current database enrichment into a reproducible SQL file, use the export scripts in `scripts/`.
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DB_HOST` | MySQL host | `localhost` |
+| `DB_PORT` | MySQL port | `3306` |
+| `DB_USER` | Database user | `root` |
+| `DB_PASS` | Database password | `password` |
+| `DB_NAME` | Database name | `ai_command_atlas` |
+| `ANTHROPIC_API_KEY` | Optional Claude API key for scraper translation | unset |
+| `ANTHROPIC_BASE_URL` | Optional Anthropic-compatible API base URL | `https://api.anthropic.com` |
+| `ANTHROPIC_MODEL` | Optional translation model override | `claude-sonnet-4-6` |
+| `GITHUB_TOKEN` | Optional GitHub token for higher scraper rate limits | unset |
+
 ## Production Deployment
 
 ### Docker
 
-Same as Quick Start Option 1. Customize configuration by editing environment variables in `docker-compose.yml`.
-
-To update:
-
 ```bash
-git pull
+git pull --ff-only
 docker compose up -d --build
 ```
 
 ### Manual (PM2 + Nginx)
 
-For deploying directly to a VPS or cloud server.
-
-**Prerequisites:** Node.js 20+, MySQL 8.0, PM2 (`npm i -g pm2`)
-
-#### 1. Install & build
+**Prerequisites:** Node.js 20+, MySQL 8.0, PM2.
 
 ```bash
 git clone https://github.com/luoianun/ai-command-atlas.git
 cd ai-command-atlas
 npm ci --omit=dev
-```
-
-#### 2. Configure environment
-
-```bash
 cp .env.example .env.local
-```
-
-Edit `.env.local`:
-
-```env
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=atlas
-DB_PASS=your_password
-DB_NAME=ai_command_atlas
-```
-
-> Recommended: create a least-privilege database user:
-> ```sql
-> CREATE USER 'atlas'@'localhost' IDENTIFIED BY 'your_password';
-> GRANT SELECT, INSERT, UPDATE, DELETE ON ai_command_atlas.* TO 'atlas'@'localhost';
-> FLUSH PRIVILEGES;
-> ```
-
-#### 3. Initialize database
-
-```bash
-mysql -u root -p < scripts/schema.sql
-mysql -u root -p ai_command_atlas < scripts/seed.sql
-```
-
-#### 4. Build & start
-
-```bash
 npm run build
-
-pm2 start npm --name "atlas" -- start
-pm2 save       # persist process list
-pm2 startup    # generate boot script (run the sudo command it prints)
+pm2 start npm --name atlas -- start
+pm2 save
+pm2 startup
 ```
 
-PM2 cheat sheet:
-
-```bash
-pm2 status        # check status
-pm2 logs atlas    # view logs
-pm2 restart atlas # restart
-pm2 stop atlas    # stop
-```
-
-#### 5. Nginx reverse proxy (optional)
+Example Nginx reverse proxy:
 
 ```nginx
 server {
     listen 80;
     server_name your-domain.com;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name your-domain.com;
-
-    ssl_certificate     /etc/ssl/your-domain.com.pem;
-    ssl_certificate_key /etc/ssl/your-domain.com.key;
 
     location / {
         proxy_pass         http://127.0.0.1:3000;
@@ -196,57 +192,57 @@ server {
 nginx -t && nginx -s reload
 ```
 
-#### Updating
-
-```bash
-git pull
-npm ci --omit=dev
-npm run build
-pm2 restart atlas
-```
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DB_HOST` | MySQL host | `localhost` |
-| `DB_PORT` | MySQL port | `3306` |
-| `DB_USER` | Database user | `root` |
-| `DB_PASS` | Database password | `password` |
-| `DB_NAME` | Database name | `ai_command_atlas` |
-
 ## Project Structure
 
-```
+```text
 src/
 ├── app/
-│   ├── page.tsx                        # Home (/)
-│   ├── tools/page.tsx                  # Tool listing (/tools)
-│   ├── tools/[tool]/page.tsx           # Tool detail (/tools/:tool)
-│   ├── commands/[tool]/[command]/      # Command detail (/commands/:tool/:command)
-│   ├── compare/page.tsx                # Cross-tool comparison (/compare)
-│   └── api/                            # search · stats · tools
+│   ├── page.tsx                         # Home page
+│   ├── tools/page.tsx                   # Tool listing
+│   ├── tools/[tool]/page.tsx            # Tool detail page
+│   ├── commands/page.tsx                # All commands page
+│   ├── commands/[tool]/[command]/       # Command detail page
+│   ├── compare/page.tsx                 # Cross-tool comparison page
+│   └── api/                             # search, suggest, stats, tools, commands
 ├── components/
 │   ├── nav.tsx / footer.tsx
-│   ├── badge.tsx                       # Risk · Source · Type · Category badges
-│   ├── search-bar.tsx                  # Global search input
-│   ├── code-block.tsx                  # Code block with copy button
-│   └── theme-toggle.tsx
+│   ├── search-bar.tsx                   # Global command search
+│   ├── tool-avatar.tsx / tool-chips.tsx
+│   ├── badge.tsx                        # Risk, source, type, category badges
+│   ├── code-block.tsx                   # Copyable code blocks
+│   └── language-provider.tsx
 ├── lib/
-│   ├── db.ts                           # mysql2 connection pool
-│   └── queries.ts                      # All DB query functions
-└── types/index.ts                      # TypeScript type definitions
+│   ├── db.ts                            # mysql2 pool
+│   └── queries.ts                       # Data access helpers
+└── types/index.ts                       # Shared TypeScript types
 scripts/
-├── schema.sql                          # Table definitions
-└── seed.sql                            # Seed data (5 tools · 51 commands · 65 comparison entries)
+├── schema.sql                           # Database schema
+├── seed.sql                             # Base seed data
+├── seed-new-tools.sql                   # Supplemental data for newer tools
+├── scraped-data.sql                     # Exported scraper enrichment data
+├── export-scraped-data.*                # DB export helpers
+└── scrapers/                            # Per-tool documentation scrapers
+```
+
+## Common Commands
+
+```bash
+npm run dev              # start local dev server
+npm run build            # production build
+npm run start            # start production server
+npm run lint             # run ESLint
+npm run scrape -- aider  # run one scraper
 ```
 
 ## Contributing
 
-Contributions are welcome via [GitHub Issues](https://github.com/luoianun/ai-command-atlas/issues):
-- Command additions or corrections
-- New tool suggestions
-- Bug reports
+Contributions are welcome through GitHub Issues and pull requests:
+
+- Add or correct command metadata
+- Add official source links, examples, notes, or caveats
+- Improve scraper coverage for a supported tool
+- Suggest a new AI coding CLI to include
+- Report UI, data, or deployment bugs
 
 ## License
 
