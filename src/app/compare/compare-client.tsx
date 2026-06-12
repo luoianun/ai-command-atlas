@@ -109,17 +109,20 @@ export function CompareClient({
 
       {/* Compare table */}
       <div className="panel-card mt-4 overflow-hidden">
-        <div className="overflow-x-auto pb-8">
-          <table className="w-full border-collapse min-w-[860px]">
+        <div className="overflow-x-auto pb-3 [scrollbar-gutter:stable]">
+          <table
+            className="border-separate border-spacing-0 table-fixed"
+            style={{ minWidth: `${220 + tools.length * 190}px` }}
+          >
             <thead>
               <tr>
-                <th className="text-left px-[14px] py-[10px] bg-[var(--surface)] border-b border-r border-[var(--border)] text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] w-[180px]">
+                <th className="sticky left-0 z-30 text-left px-[14px] py-[10px] bg-[var(--surface)] border-b border-r border-[var(--border)] text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] w-[220px] shadow-[8px_0_14px_-14px_rgba(0,0,0,0.45)]">
                   {t.compare.capability}
                 </th>
                 {tools.map((tl) => (
                   <th
                     key={tl.id}
-                    className="text-left px-[14px] py-[10px] bg-[var(--surface)] border-b border-[var(--border)] text-[12px] font-semibold text-[var(--fg)] w-[174px]"
+                    className="text-left px-[14px] py-[10px] bg-[var(--surface)] border-b border-r border-[var(--border)] text-[12px] font-semibold text-[var(--fg)] w-[190px]"
                   >
                     <div className="flex items-center gap-[7px]">
                       <span
@@ -143,7 +146,7 @@ export function CompareClient({
                   }
                 >
                   {/* Capability column — stronger surface */}
-                  <td className="p-[14px] bg-[var(--surface)] border-r border-[var(--border)] align-top">
+                  <td className="sticky left-0 z-20 p-[14px] bg-[var(--surface)] border-r border-b border-[var(--border)] align-top w-[220px] shadow-[8px_0_14px_-14px_rgba(0,0,0,0.45)]">
                     <div className="text-[12px] font-semibold text-[var(--fg)]">
                       {lang === "zh" && cap.capability_zh
                         ? cap.capability_zh
@@ -156,17 +159,13 @@ export function CompareClient({
                     </div>
                   </td>
 
-                  {tools.map((tl, tIdx) => {
+                  {tools.map((tl) => {
                     const entry = entryMap.get(`${cap.id}-${tl.id}`);
                     const isSupported = entry && entry.has_feature;
                     return (
                       <td
                         key={tl.id}
-                        className={`px-[14px] py-3 align-top ${
-                          tIdx < tools.length - 1
-                            ? "border-r border-[var(--border-light)]"
-                            : ""
-                        }`}
+                        className="px-[14px] py-3 align-top border-r border-b border-[var(--border-light)] w-[190px]"
                       >
                         {!isSupported ? (
                           /* Unsupported cell */
