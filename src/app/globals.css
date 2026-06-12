@@ -132,4 +132,29 @@ body {
     box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
     border-color: var(--accent);
   }
+
+  .compare-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) var(--surface);
+  }
+
+  .compare-scrollbar::-webkit-scrollbar {
+    display: block;
+    height: 14px;
+  }
+
+  .compare-scrollbar::-webkit-scrollbar-track {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .compare-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border: 3px solid var(--surface);
+    border-radius: 999px;
+  }
+
+  .compare-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--muted);
+  }
 }

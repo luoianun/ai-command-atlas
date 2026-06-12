@@ -109,22 +109,22 @@ export function CompareClient({
 
       {/* Compare table */}
       <div className="panel-card mt-4 overflow-hidden">
-        <div className="overflow-x-auto pb-3 [scrollbar-gutter:stable]">
+        <div className="compare-scrollbar overflow-x-auto pb-4">
           <table
             className="border-separate border-spacing-0 table-fixed"
-            style={{ minWidth: `${220 + tools.length * 190}px` }}
+            style={{ width: `${240 + tools.length * 220}px` }}
           >
             <thead>
               <tr>
-                <th className="sticky left-0 z-30 text-left px-[14px] py-[10px] bg-[var(--surface)] border-b border-r border-[var(--border)] text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] w-[220px] shadow-[8px_0_14px_-14px_rgba(0,0,0,0.45)]">
+                <th className="sticky left-0 z-30 text-left px-[16px] py-[12px] bg-[var(--surface)] border-b border-r border-[var(--border)] text-[11px] font-semibold text-[var(--muted)] uppercase tracking-[.05em] w-[240px] shadow-[12px_0_18px_-18px_rgba(0,0,0,0.55)]">
                   {t.compare.capability}
                 </th>
                 {tools.map((tl) => (
                   <th
                     key={tl.id}
-                    className="text-left px-[14px] py-[10px] bg-[var(--surface)] border-b border-r border-[var(--border)] text-[12px] font-semibold text-[var(--fg)] w-[190px]"
+                    className="text-left px-[16px] py-[12px] bg-[var(--surface)] border-b border-r border-[var(--border)] text-[12px] font-semibold text-[var(--fg)] w-[220px]"
                   >
-                    <div className="flex items-center gap-[7px]">
+                    <div className="flex items-center gap-[7px] whitespace-nowrap">
                       <span
                         className="w-[9px] h-[9px] rounded-full flex-shrink-0 ring-1 ring-[var(--border)]"
                         style={{ background: tl.color }}
@@ -146,13 +146,13 @@ export function CompareClient({
                   }
                 >
                   {/* Capability column — stronger surface */}
-                  <td className="sticky left-0 z-20 p-[14px] bg-[var(--surface)] border-r border-b border-[var(--border)] align-top w-[220px] shadow-[8px_0_14px_-14px_rgba(0,0,0,0.45)]">
+                  <td className="sticky left-0 z-20 p-[16px] bg-[var(--surface)] border-r border-b border-[var(--border)] align-top w-[240px] shadow-[12px_0_18px_-18px_rgba(0,0,0,0.55)]">
                     <div className="text-[12px] font-semibold text-[var(--fg)]">
                       {lang === "zh" && cap.capability_zh
                         ? cap.capability_zh
                         : cap.capability}
                     </div>
-                    <div className="text-[11px] text-[var(--muted)] mt-[2px] leading-[1.4]">
+                    <div className="text-[11px] text-[var(--muted)] mt-[3px] leading-[1.45]">
                       {lang === "zh" && cap.capability_desc_zh
                         ? cap.capability_desc_zh
                         : cap.capability_desc}
@@ -165,7 +165,7 @@ export function CompareClient({
                     return (
                       <td
                         key={tl.id}
-                        className="px-[14px] py-3 align-top border-r border-b border-[var(--border-light)] w-[190px]"
+                        className="px-[16px] py-[14px] align-top border-r border-b border-[var(--border-light)] w-[220px] bg-[var(--bg)]/35"
                       >
                         {!isSupported ? (
                           /* Unsupported cell */
