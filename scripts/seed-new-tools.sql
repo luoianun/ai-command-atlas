@@ -140,3 +140,114 @@ INSERT INTO commands (tool_id, slug, name, command_type, category, risk_level, s
 (@kc, 'gateway-model',   'Kilo Gateway',     'config',     'Model',      'low',    'official', 'Access 500+ AI models through Kilo Gateway with zero markup over provider pricing.',            '通过 Kilo Gateway 以提供商原价访问 500+ AI 模型，零溢价。',                   'Kilo Gateway (Settings)',               NULL,                    '2026-06-09'),
 (@kc, 'mcp-server',      'MCP server',       'config',     'MCP',        'medium', 'official', 'Connect external MCP tool servers to extend Kilo Code capabilities.',                           '连接外部 MCP 工具服务器以扩展 Kilo Code 功能。',                             'MCP server (Settings)',                 NULL,                    '2026-06-09')
 ON DUPLICATE KEY UPDATE description=VALUES(description), description_zh=VALUES(description_zh), syntax=VALUES(syntax), last_checked=VALUES(last_checked);
+
+-- ── Compare entries for new tools ───────────────────────────
+SET @cap_model1 = (SELECT id FROM compare_capabilities WHERE capability='Specify model');
+SET @cap_model2 = (SELECT id FROM compare_capabilities WHERE capability='Select provider');
+SET @cap_model3 = (SELECT id FROM compare_capabilities WHERE capability='Set temperature');
+SET @cap_sess1  = (SELECT id FROM compare_capabilities WHERE capability='Compact context');
+SET @cap_sess2  = (SELECT id FROM compare_capabilities WHERE capability='Resume session');
+SET @cap_sess3  = (SELECT id FROM compare_capabilities WHERE capability='Clear history');
+SET @cap_perm1  = (SELECT id FROM compare_capabilities WHERE capability='Skip permissions');
+SET @cap_perm2  = (SELECT id FROM compare_capabilities WHERE capability='Sandbox mode');
+SET @cap_perm3  = (SELECT id FROM compare_capabilities WHERE capability='Approval mode');
+SET @cap_mcp1   = (SELECT id FROM compare_capabilities WHERE capability='MCP support');
+SET @cap_mcp2   = (SELECT id FROM compare_capabilities WHERE capability='Add MCP server');
+SET @cap_cfg1   = (SELECT id FROM compare_capabilities WHERE capability='View / edit config');
+SET @cap_cfg2   = (SELECT id FROM compare_capabilities WHERE capability='Custom instructions file');
+
+DELETE FROM compare_entries
+WHERE tool_id IN (@gs, @cl, @ki, @gh, @qd, @tr, @kc);
+
+INSERT INTO compare_entries (capability_id, tool_id, has_feature, command_name, command_slug, command_desc, command_desc_zh, none_label, none_label_zh, risk_level, source, copy_text) VALUES
+(@cap_model1,@gs,0,NULL,NULL,NULL,NULL,'Provider default / config','使用提供商默认值或配置',NULL,NULL,NULL),
+(@cap_model1,@cl,0,NULL,NULL,NULL,NULL,'Selected in extension settings','在扩展设置中选择',NULL,NULL,NULL),
+(@cap_model1,@ki,0,NULL,NULL,NULL,NULL,'Selected in Kiro settings','在 Kiro 设置中选择',NULL,NULL,NULL),
+(@cap_model1,@gh,0,NULL,NULL,NULL,NULL,'GitHub Copilot managed','由 GitHub Copilot 管理',NULL,NULL,NULL),
+(@cap_model1,@qd,0,NULL,NULL,NULL,NULL,'Selected in IDE settings','在 IDE 设置中选择',NULL,NULL,NULL),
+(@cap_model1,@tr,0,NULL,NULL,NULL,NULL,'Selected in IDE settings','在 IDE 设置中选择',NULL,NULL,NULL),
+(@cap_model1,@kc,1,'/model','slash-model','Switch the AI model used in the current session.','切换当前会话使用的 AI 模型。',NULL,NULL,'low','official','/model'),
+(@cap_model2,@gs,1,'configure','configure','Configure LLM provider and credentials.','配置 LLM 提供商和凭据。',NULL,NULL,'low','official','goose configure'),
+(@cap_model2,@cl,0,NULL,NULL,NULL,NULL,'Provider selected in extension settings','在扩展设置中选择提供商',NULL,NULL,NULL),
+(@cap_model2,@ki,0,NULL,NULL,NULL,NULL,'AWS-managed provider path','由 AWS 管理提供商路径',NULL,NULL,NULL),
+(@cap_model2,@gh,0,NULL,NULL,NULL,NULL,'GitHub Copilot only','仅 GitHub Copilot',NULL,NULL,NULL),
+(@cap_model2,@qd,0,NULL,NULL,NULL,NULL,'Qoder-managed models','由 Qoder 管理模型',NULL,NULL,NULL),
+(@cap_model2,@tr,0,NULL,NULL,NULL,NULL,'Trae-managed models','由 Trae 管理模型',NULL,NULL,NULL),
+(@cap_model2,@kc,1,'Kilo Gateway','gateway-model','Access 500+ AI models through Kilo Gateway.','通过 Kilo Gateway 访问 500+ AI 模型。',NULL,NULL,'low','official','Kilo Gateway (Settings)'),
+(@cap_model3,@gs,0,NULL,NULL,NULL,NULL,'Provider-specific setting','提供商特定设置',NULL,NULL,NULL),
+(@cap_model3,@cl,0,NULL,NULL,NULL,NULL,'Provider-specific setting','提供商特定设置',NULL,NULL,NULL),
+(@cap_model3,@ki,0,NULL,NULL,NULL,NULL,'Not exposed','未暴露',NULL,NULL,NULL),
+(@cap_model3,@gh,0,NULL,NULL,NULL,NULL,'Not exposed','未暴露',NULL,NULL,NULL),
+(@cap_model3,@qd,0,NULL,NULL,NULL,NULL,'Not exposed','未暴露',NULL,NULL,NULL),
+(@cap_model3,@tr,0,NULL,NULL,NULL,NULL,'Not exposed','未暴露',NULL,NULL,NULL),
+(@cap_model3,@kc,0,NULL,NULL,NULL,NULL,'Provider-specific setting','提供商特定设置',NULL,NULL,NULL),
+(@cap_sess1,@gs,1,'/compact','slash-compact','Compress conversation history to reduce context window usage.','压缩对话历史以减少 context window 使用量。',NULL,NULL,'low','official','/compact'),
+(@cap_sess1,@cl,0,NULL,NULL,NULL,NULL,'Use /newtask for fresh context','使用 /newtask 创建新上下文',NULL,NULL,NULL),
+(@cap_sess1,@ki,0,NULL,NULL,NULL,NULL,'Use /context to manage context','使用 /context 管理上下文',NULL,NULL,NULL),
+(@cap_sess1,@gh,0,NULL,NULL,NULL,NULL,'Not applicable','不适用',NULL,NULL,NULL),
+(@cap_sess1,@qd,0,NULL,NULL,NULL,NULL,'Managed by IDE agent context','由 IDE agent 上下文管理',NULL,NULL,NULL),
+(@cap_sess1,@tr,0,NULL,NULL,NULL,NULL,'Managed by IDE chat context','由 IDE chat 上下文管理',NULL,NULL,NULL),
+(@cap_sess1,@kc,1,'/compact','slash-compact','Compress conversation history to free up context window tokens.','压缩对话历史以释放 context window token。',NULL,NULL,'low','official','/compact'),
+(@cap_sess2,@gs,1,'session -r','session-resume','Resume the most recent previous session.','恢复最近一次会话。',NULL,NULL,'low','official','goose session -r'),
+(@cap_sess2,@cl,1,'/newtask','newtask','Start a new task while preserving conversation history.','在保留对话历史的同时开始新任务。',NULL,NULL,'low','official','/newtask'),
+(@cap_sess2,@ki,1,'chat --resume','chat-resume','Resume the most recent chat session.','恢复最近的聊天会话。',NULL,NULL,'low','official','kiro-cli chat --resume'),
+(@cap_sess2,@gh,0,NULL,NULL,NULL,NULL,'No persistent AI session','无持久 AI 会话',NULL,NULL,NULL),
+(@cap_sess2,@qd,0,NULL,NULL,NULL,NULL,'Managed by IDE workspace','由 IDE 工作区管理',NULL,NULL,NULL),
+(@cap_sess2,@tr,0,NULL,NULL,NULL,NULL,'Managed by IDE workspace','由 IDE 工作区管理',NULL,NULL,NULL),
+(@cap_sess2,@kc,1,'/sessions','slash-sessions','Manage and switch between saved sessions.','管理和切换已保存的会话。',NULL,NULL,'low','official','/sessions'),
+(@cap_sess3,@gs,1,'/clear','slash-clear','Clear conversation history in the current session.','清除当前会话的对话历史。',NULL,NULL,'low','official','/clear'),
+(@cap_sess3,@cl,1,'/newtask','newtask','Start with a fresh task context.','从新的任务上下文开始。',NULL,NULL,'low','official','/newtask'),
+(@cap_sess3,@ki,0,NULL,NULL,NULL,NULL,'Not available','不可用',NULL,NULL,NULL),
+(@cap_sess3,@gh,0,NULL,NULL,NULL,NULL,'Not applicable','不适用',NULL,NULL,NULL),
+(@cap_sess3,@qd,0,NULL,NULL,NULL,NULL,'Managed by IDE chat controls','由 IDE chat 控件管理',NULL,NULL,NULL),
+(@cap_sess3,@tr,0,NULL,NULL,NULL,NULL,'Managed by IDE chat controls','由 IDE chat 控件管理',NULL,NULL,NULL),
+(@cap_sess3,@kc,0,NULL,NULL,NULL,NULL,'Use session controls','使用会话控件',NULL,NULL,NULL),
+(@cap_perm1,@gs,0,NULL,NULL,NULL,NULL,'Use /mode auto for autonomous actions','使用 /mode auto 自主执行',NULL,NULL,NULL),
+(@cap_perm1,@cl,0,NULL,NULL,NULL,NULL,'Act mode still runs inside VS Code permissions','Act mode 仍在 VS Code 权限内运行',NULL,NULL,NULL),
+(@cap_perm1,@ki,1,'--trust-all-tools','trust-all-tools','Auto-approve all tool executions without confirmation prompts.','无需确认提示，自动批准所有工具执行。',NULL,NULL,'high','official','--trust-all-tools'),
+(@cap_perm1,@gh,0,NULL,NULL,NULL,NULL,'Not available','不可用',NULL,NULL,NULL),
+(@cap_perm1,@qd,0,NULL,NULL,NULL,NULL,'Not available','不可用',NULL,NULL,NULL),
+(@cap_perm1,@tr,0,NULL,NULL,NULL,NULL,'Not available','不可用',NULL,NULL,NULL),
+(@cap_perm1,@kc,0,NULL,NULL,NULL,NULL,'Mode-dependent approvals','取决于模式的批准流程',NULL,NULL,NULL),
+(@cap_perm2,@gs,0,NULL,NULL,NULL,NULL,'Not available','不可用',NULL,NULL,NULL),
+(@cap_perm2,@cl,0,NULL,NULL,NULL,NULL,'Host VS Code environment','宿主 VS Code 环境',NULL,NULL,NULL),
+(@cap_perm2,@ki,0,NULL,NULL,NULL,NULL,'Host IDE environment','宿主 IDE 环境',NULL,NULL,NULL),
+(@cap_perm2,@gh,0,NULL,NULL,NULL,NULL,'Not applicable','不适用',NULL,NULL,NULL),
+(@cap_perm2,@qd,0,NULL,NULL,NULL,NULL,'Host IDE environment','宿主 IDE 环境',NULL,NULL,NULL),
+(@cap_perm2,@tr,0,NULL,NULL,NULL,NULL,'Host IDE environment','宿主 IDE 环境',NULL,NULL,NULL),
+(@cap_perm2,@kc,0,NULL,NULL,NULL,NULL,'Host VS Code environment','宿主 VS Code 环境',NULL,NULL,NULL),
+(@cap_perm3,@gs,1,'/mode','slash-mode','Switch agent mode: auto, approve, or chat.','切换 agent 模式：auto、approve 或 chat。',NULL,NULL,'medium','official','/mode approve'),
+(@cap_perm3,@cl,1,'Plan mode','plan-mode','Read-only planning mode proposes changes before approval.','只读规划模式会在批准前提出变更。',NULL,NULL,'low','official','Plan mode'),
+(@cap_perm3,@ki,1,'/tools','slash-tools','View and manage tool permissions for the current session.','查看和管理当前会话的工具权限。',NULL,NULL,'low','official','/tools'),
+(@cap_perm3,@gh,0,NULL,NULL,NULL,NULL,'Not available','不可用',NULL,NULL,NULL),
+(@cap_perm3,@qd,0,NULL,NULL,NULL,NULL,'IDE-controlled approval flow','由 IDE 控制批准流程',NULL,NULL,NULL),
+(@cap_perm3,@tr,0,NULL,NULL,NULL,NULL,'IDE-controlled approval flow','由 IDE 控制批准流程',NULL,NULL,NULL),
+(@cap_perm3,@kc,1,'Plan mode','plan-mode','Task planning mode creates plans without making changes.','任务规划模式创建计划而不进行变更。',NULL,NULL,'low','official','Plan mode'),
+(@cap_mcp1,@gs,1,'--with-extension','with-extension','Add a custom stdio extension command to the session.','向会话添加自定义 stdio 扩展命令。',NULL,NULL,'medium','official','goose session --with-extension <cmd>'),
+(@cap_mcp1,@cl,1,'/mcp:<srv>:<pmt>','mcp-prompt','Invoke a prompt from a connected MCP server.','调用已连接 MCP 服务器的 prompt。',NULL,NULL,'low','official','/mcp:<server>:<prompt>'),
+(@cap_mcp1,@ki,1,'/mcp','slash-mcp','Display currently active MCP servers.','显示当前激活的 MCP 服务器。',NULL,NULL,'low','official','/mcp'),
+(@cap_mcp1,@gh,0,NULL,NULL,NULL,NULL,'Not supported','不支持',NULL,NULL,NULL),
+(@cap_mcp1,@qd,0,NULL,NULL,NULL,NULL,'Not exposed in CLI data','CLI 数据中未暴露',NULL,NULL,NULL),
+(@cap_mcp1,@tr,0,NULL,NULL,NULL,NULL,'Supported in IDE settings','在 IDE 设置中支持',NULL,NULL,NULL),
+(@cap_mcp1,@kc,1,'MCP server','mcp-server','Connect external MCP tool servers to extend Kilo Code capabilities.','连接外部 MCP 工具服务器以扩展 Kilo Code 功能。',NULL,NULL,'medium','official','MCP server (Settings)'),
+(@cap_mcp2,@gs,1,'--with-extension','with-extension','Add a custom stdio extension command to the session.','向会话添加自定义 stdio 扩展命令。',NULL,NULL,'medium','official','goose session --with-extension <cmd>'),
+(@cap_mcp2,@cl,0,NULL,NULL,NULL,NULL,'Configured in MCP settings UI','在 MCP 设置 UI 中配置',NULL,NULL,NULL),
+(@cap_mcp2,@ki,0,NULL,NULL,NULL,NULL,'Configured in IDE settings','在 IDE 设置中配置',NULL,NULL,NULL),
+(@cap_mcp2,@gh,0,NULL,NULL,NULL,NULL,'Not supported','不支持',NULL,NULL,NULL),
+(@cap_mcp2,@qd,0,NULL,NULL,NULL,NULL,'Configured in IDE settings','在 IDE 设置中配置',NULL,NULL,NULL),
+(@cap_mcp2,@tr,0,NULL,NULL,NULL,NULL,'Configured in IDE settings','在 IDE 设置中配置',NULL,NULL,NULL),
+(@cap_mcp2,@kc,1,'MCP server','mcp-server','Connect external MCP tool servers to extend Kilo Code capabilities.','连接外部 MCP 工具服务器以扩展 Kilo Code 功能。',NULL,NULL,'medium','official','MCP server (Settings)'),
+(@cap_cfg1,@gs,1,'configure','configure','Configure Goose: set LLM provider, API keys, and extensions.','配置 Goose：设置 LLM 提供商、API 密钥和扩展。',NULL,NULL,'low','official','goose configure'),
+(@cap_cfg1,@cl,1,'.clinerules','clinerules','Project rules directory injected into every task.','注入每个任务的项目规则目录。',NULL,NULL,'low','official','.clinerules/'),
+(@cap_cfg1,@ki,1,'settings list','settings-list','List all current Kiro settings.','列出所有当前 Kiro 设置。',NULL,NULL,'low','official','kiro-cli settings list'),
+(@cap_cfg1,@gh,1,'config','config','Configure Copilot CLI options.','配置 Copilot CLI 选项。',NULL,NULL,'low','official','gh copilot config'),
+(@cap_cfg1,@qd,1,'Repo Wiki','repo-wiki','Continuously synced project knowledge base.','持续同步的项目知识库。',NULL,NULL,'low','official','Repo Wiki (IDE)'),
+(@cap_cfg1,@tr,1,'.trae/rules/','project-rules','Project rules directory that guides AI behavior.','引导 AI 行为的项目规则目录。',NULL,NULL,'low','official','.trae/rules/project_rules.md'),
+(@cap_cfg1,@kc,1,'.kilo/rules/','kilo-rules','Project rules directory injected into every session.','注入每次会话的项目规则目录。',NULL,NULL,'low','official','.kilo/rules/'),
+(@cap_cfg2,@gs,1,'.goosehints','goosehints','Project instructions file loaded at session start.','会话启动时加载的项目指令文件。',NULL,NULL,'low','official','.goosehints'),
+(@cap_cfg2,@cl,1,'.clinerules','clinerules','Project rules files define coding standards and guidelines.','项目规则文件定义编码标准和指南。',NULL,NULL,'low','official','.clinerules/'),
+(@cap_cfg2,@ki,1,'Steering','steering','Steering rules guide AI behavior.','引导规则用于指导 AI 行为。',NULL,NULL,'low','official','.kiro/steering/*.md'),
+(@cap_cfg2,@gh,0,NULL,NULL,NULL,NULL,'No project instruction file','无项目指令文件',NULL,NULL,NULL),
+(@cap_cfg2,@qd,1,'Repo Wiki','repo-wiki','Project knowledge base for codebase understanding.','用于代码库理解的项目知识库。',NULL,NULL,'low','official','Repo Wiki (IDE)'),
+(@cap_cfg2,@tr,1,'.trae/rules/','project-rules','Markdown files guide AI behavior for the project.','Markdown 文件引导项目的 AI 行为。',NULL,NULL,'low','official','.trae/rules/project_rules.md'),
+(@cap_cfg2,@kc,1,'.kilo/rules/','kilo-rules','Markdown files define coding standards injected into every session.','Markdown 文件定义注入每次会话的编码标准。',NULL,NULL,'low','official','.kilo/rules/');
