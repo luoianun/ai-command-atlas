@@ -83,8 +83,10 @@ function parseCliTables(sourceUrl: string, html: string, commands: ScrapedComman
     }
 
     const rows = $el.find("tr").toArray();
-    const headers = $(rows.shift() || [])
-      .find("th,td")
+    const headerRow = rows.shift();
+    if (!headerRow) return;
+
+    const headers = $(headerRow).find("th,td")
       .map((__, cell) => cleanText($(cell).text()))
       .get();
     if (!headers.length) return;

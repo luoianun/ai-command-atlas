@@ -75,8 +75,10 @@ function parseTables(sourceUrl: string, html: string, commands: ScrapedCommand[]
 
   $("main table").each((_, table) => {
     const rows = $(table).find("tr").toArray();
-    const headers = $(rows.shift() || [])
-      .find("th,td")
+    const headerRow = rows.shift();
+    if (!headerRow) return;
+
+    const headers = $(headerRow).find("th,td")
       .map((__, cell) => cleanText($(cell).text()))
       .get();
     if (!headers.length) return;

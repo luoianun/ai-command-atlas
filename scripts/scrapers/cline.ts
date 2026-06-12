@@ -94,8 +94,10 @@ function parseCliReference(html: string, commands: ScrapedCommand[], seen: Set<s
 
   $("main table").each((index, table) => {
     const rows = $(table).find("tr").toArray();
-    const headers = $(rows.shift() || [])
-      .find("th,td")
+    const headerRow = rows.shift();
+    if (!headerRow) return;
+
+    const headers = $(headerRow).find("th,td")
       .map((_, cell) => cleanText($(cell).text()))
       .get();
     if (!headers.length) return;
