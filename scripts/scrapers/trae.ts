@@ -101,6 +101,16 @@ function valueHintFromName(name: string): string | null {
   return match?.[0] || null;
 }
 
+function commandNameFromPrimary(primary: string): string {
+  const longFlag = primary.match(/--[a-zA-Z][a-zA-Z0-9_-]*(?:\s+<[^>]+>)?/);
+  if (longFlag) return cleanText(longFlag[0]);
+
+  const slashCommand = primary.match(/\/[a-zA-Z][a-zA-Z0-9_-]*/);
+  if (slashCommand) return slashCommand[0];
+
+  return cleanText(primary.split(/\s+或\s+|\s*,\s*/)[0] || primary);
+}
+
 function extractVolcengineMarkdown(html: string): { title: string; markdown: string } | null {
   const match = html.match(/window\._ROUTER_DATA = (\{[\s\S]*?\})\s*<\/script>/);
   if (!match) return null;
@@ -167,11 +177,7 @@ function parseTableCommands(sourceUrl: string, title: string, markdown: string, 
       const description = row[Math.min(row.length - 1, table.headers.includes("是否必填") ? 2 : 1)] || row[1];
       if (!primary || !description) continue;
 
-      const candidates = primary
-        .split(/\s+或\s+|\s*,\s*/)
-        .map((part) => cleanText(part))
-        .filter(Boolean);
-      const name = candidates[0];
+      const name = commandNameFromPrimary(primary);
       if (!name) continue;
 
       const isCommandLike = name.startsWith("/") || name.startsWith("--") || /^[A-Z][A-Z0-9_]+$/.test(name);
