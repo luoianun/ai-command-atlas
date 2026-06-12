@@ -4,6 +4,8 @@
 
 面向开发者的 AI Coding CLI 命令参考站点。它把命令行参数、Slash Commands、配置文件、使用示例、风险等级、官方来源和跨工具能力对比整合到一个中英文双语界面里，方便快速查询和比较各类 AI 编码工具。
 
+体验网站：https://aiclis.xyz/
+
 ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![React](https://img.shields.io/badge/React-19-61dafb) ![MySQL](https://img.shields.io/badge/MySQL-8.0-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-38bdf8) ![Docker](https://img.shields.io/badge/Docker-ready-2496ed)
 
 ## 项目功能

@@ -2,6 +2,8 @@
 
 A searchable reference site for AI coding CLIs. It brings command-line options, slash commands, config files, examples, risk levels, official sources, and cross-tool capability comparisons into one bilingual interface.
 
+Live site: https://aiclis.xyz/
+
 [简体中文](./README.zh-CN.md)
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![React](https://img.shields.io/badge/React-19-61dafb) ![MySQL](https://img.shields.io/badge/MySQL-8.0-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-38bdf8) ![Docker](https://img.shields.io/badge/Docker-ready-2496ed)
