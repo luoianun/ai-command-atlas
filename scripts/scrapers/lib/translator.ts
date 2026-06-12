@@ -27,6 +27,17 @@ interface TranslateInput {
   caveats?: string[];
 }
 
+interface TranslationResult {
+  slug: string;
+  description_zh: string;
+  notes_zh?: string[];
+  caveats_zh?: string[];
+}
+
+interface TranslationToolResult {
+  translations: TranslationResult[];
+}
+
 export async function translateBatch(
   commands: TranslateInput[]
 ): Promise<Map<string, TranslatedFields>> {
@@ -83,42 +94,64 @@ async function translateBatchSingle(
   const response = await getClient().messages.create({
     model,
     max_tokens: 4096,
+    tools: [
+      {
+        name: "save_translations",
+        description: "Return Simplified Chinese translations for the provided AI CLI documentation entries.",
+        input_schema: {
+          type: "object",
+          properties: {
+            translations: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  slug: { type: "string" },
+                  description_zh: { type: "string" },
+                  notes_zh: { type: "array", items: { type: "string" } },
+                  caveats_zh: { type: "array", items: { type: "string" } },
+                },
+                required: ["slug", "description_zh"],
+              },
+            },
+          },
+          required: ["translations"],
+        },
+      },
+    ],
+    tool_choice: { type: "tool", name: "save_translations" },
     messages: [
       {
         role: "user",
-        content: `You are a technical translator for AI CLI tool documentation. Translate the following from English to Simplified Chinese.
+        content: `Translate the following AI CLI tool documentation entries from English to Simplified Chinese.
 
 Rules:
 - Keep technical terms in English: CLI, API, JSON, MCP, token, model, context window, sandbox, prompt, slash command, flag, config, session, repository, commit, diff, lint, debug, cache, timeout, webhook, endpoint, SDK, LLM, embedding
 - Keep command names, flag names (--model, /compact, etc.), file paths, and code exactly as-is
 - Use concise, professional Chinese suitable for developer documentation
-- Return ONLY valid JSON, no markdown fences
+- Return the translations by calling the save_translations tool
 
 Input:
 ${JSON.stringify(input, null, 2)}
 
-Output format (array matching input order):
-[{"slug": "...", "description_zh": "...", "notes_zh": ["...", ...], "caveats_zh": ["...", ...]}]
-
-Only include notes_zh/caveats_zh if the input has notes/caveats.`,
+Output requirements:
+- Include one item in translations for every input item, preserving the input slugs
+- Only include notes_zh/caveats_zh if the input has notes/caveats.`,
       },
     ],
   });
 
-  const textBlock = response.content.find((b) => b.type === "text");
-  const text = textBlock?.type === "text" ? textBlock.text : "";
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) throw new Error("No JSON array in response");
+  const toolBlock = response.content.find(
+    (b): b is Extract<(typeof response.content)[number], { type: "tool_use" }> =>
+      b.type === "tool_use" && b.name === "save_translations"
+  );
+  if (!toolBlock) throw new Error("No translation tool result in response");
 
-  const parsed = JSON.parse(jsonMatch[0]) as Array<{
-    slug: string;
-    description_zh: string;
-    notes_zh?: string[];
-    caveats_zh?: string[];
-  }>;
+  const parsed = toolBlock.input as TranslationToolResult;
+  if (!Array.isArray(parsed.translations)) throw new Error("Invalid translation tool result");
 
   const results = new Map<string, TranslatedFields>();
-  for (const item of parsed) {
+  for (const item of parsed.translations) {
     results.set(item.slug, {
       description_zh: item.description_zh,
       notes_zh: item.notes_zh,
