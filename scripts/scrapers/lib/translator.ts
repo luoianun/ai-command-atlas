@@ -83,6 +83,10 @@ export async function translateBatch(
 async function translateBatchSingle(
   batch: TranslateInput[]
 ): Promise<Map<string, TranslatedFields>> {
+  if (batch.length === 1) {
+    return translateSingleText(batch[0]);
+  }
+
   const input = batch.map((cmd) => ({
     slug: cmd.slug,
     description: cmd.description,
@@ -159,4 +163,39 @@ Output requirements:
     });
   }
   return results;
+}
+
+async function translateSingleText(command: TranslateInput): Promise<Map<string, TranslatedFields>> {
+  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
+  const response = await getClient().messages.create({
+    model,
+    max_tokens: 512,
+    messages: [
+      {
+        role: "user",
+        content: `Translate this AI CLI command description from English to Simplified Chinese.
+
+Rules:
+- Keep technical terms in English: CLI, API, JSON, MCP, token, model, context window, sandbox, prompt, slash command, flag, config, session, repository, commit, diff, lint, debug, cache, timeout, webhook, endpoint, SDK, LLM, embedding
+- Keep command names, flag names, file paths, and code exactly as-is
+- Return only the translated Chinese description text, with no JSON, no markdown, and no explanation
+
+Description:
+${command.description}`,
+      },
+    ],
+  });
+
+  const textBlock = response.content.find((b) => b.type === "text");
+  const translated = textBlock?.type === "text" ? textBlock.text.trim() : "";
+  if (!translated) throw new Error("No translation text in response");
+
+  return new Map([
+    [
+      command.slug,
+      {
+        description_zh: translated,
+      },
+    ],
+  ]);
 }
